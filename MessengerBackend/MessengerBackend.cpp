@@ -78,7 +78,7 @@ type = 1	text
 type = 2	image
 type = 3	video
 */
-extern "C" void call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, unsigned short type) {
+extern "C" void call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, unsigned char type) {
 	messenger::MessageContent content;
 	std::vector<unsigned char> v_data(data, data + sizeof(data) / sizeof(unsigned char));
 	std::string s_user_id(user_id);
