@@ -1,4 +1,4 @@
-﻿<Window x:Class="Messenger.MainWindow"
+﻿<Window x:Name="MessengerWindow" x:Class="Messenger.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Messenger" Height="380.484" Width="627.742">
@@ -11,11 +11,16 @@
             <ColumnDefinition Width="0.4*"/>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="0.15*"/>
+            <ColumnDefinition Width="0.15*"/>
         </Grid.ColumnDefinitions>
-        <ListBox Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"/>
-        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2" IsReadOnly="True"/>
-        <TextBox Grid.Column="1" Grid.Row="1"/>
-        <Button Grid.Column="2" Grid.Row="1" Content="Send" Click="Button_Click" />
+        <ListBox Grid.Column="0" Grid.Row="0" Grid.RowSpan="2">
+            
+        </ListBox>
+        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" IsReadOnly="True" IsEnabled="False"/>
+        <TextBox x:Name="message_input_textbox" Grid.Column="1" Grid.Row="1"/>
+        <Button x:Name="login_button" Grid.Column="3" Grid.Row="1" Content="Login" Click="Send_Click" />
+        <Button x:Name="send_file_button" Grid.Column="2" Grid.Row="1" Content="Attach" Click="Attach_Click" />
+        <ListBox x:Name="user_listbox" Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"/>
 
     </Grid>
 </Window>
