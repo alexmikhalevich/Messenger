@@ -63,9 +63,10 @@ namespace Messenger {
                 }
             }
             else {
-                _ShowMessage(this.message_input_textbox.Text, true);
+                //_ShowMessage(this.message_input_textbox.Text, true);
                 byte[] message = System.Text.Encoding.UTF8.GetBytes(this.message_input_textbox.Text);
-                m_model.SendMessage(ref message, CModel.EMessageType.Text);
+                string key = m_model.SendMessage(ref message, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
+                m_model.GetMessageById(key).Represent();
             }
             this.message_input_textbox.Clear();
         }
@@ -100,6 +101,13 @@ namespace Messenger {
             else if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftCtrl)) {
                 message_input_textbox.Text += "\r";
             }
+        }
+        private void MessengerWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+            m_model.CloseConnection();
+            MessengerWindow.Close();
+        }
+        private void message_input_textbox_GotFocus(object sender, RoutedEventArgs e) {
+            m_model.AllMessagesSeen();
         }
     }
 }
