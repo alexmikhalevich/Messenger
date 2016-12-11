@@ -49,18 +49,18 @@ void CMessengerBackend::request_active_users() {
 	m_messenger_instance->RequestActiveUsers(m_request_user_callback);
 }
 
-extern "C" CMessengerBackend* create_backend_instance(char* server_url, unsigned short port) {
+extern "C" __declspec(dllexport) CMessengerBackend* _cdecl create_backend_instance(char* server_url, unsigned short port) {
 	return new CMessengerBackend(std::string(server_url), port);
 }
 
-extern "C" void dispose_class(CMessengerBackend* pObject) {
+extern "C" __declspec(dllexport) void _cdecl dispose_class(CMessengerBackend* pObject) {
 	if (pObject != NULL) {
 		delete pObject;
 		pObject = NULL;
 	}
 }
 
-extern "C" void call_login(CMessengerBackend* pObject, char* user_id, char* password, bool use_encryption) {
+extern "C" __declspec(dllexport) void _cdecl call_login(CMessengerBackend* pObject, char* user_id, char* password, bool use_encryption) {
 	if (pObject != NULL) {
 		std::string s_user_id(user_id);
 		std::string s_password(password);
@@ -68,7 +68,7 @@ extern "C" void call_login(CMessengerBackend* pObject, char* user_id, char* pass
 	}
 }
 
-extern "C" void call_disconnect(CMessengerBackend* pObject) {
+extern "C" __declspec(dllexport) void _cdecl call_disconnect(CMessengerBackend* pObject) {
 	if (pObject != NULL)
 		pObject->disconnect();
 }
@@ -78,7 +78,7 @@ type = 1	text
 type = 2	image
 type = 3	video
 */
-extern "C" void call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, unsigned char type) {
+extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, unsigned char type) {
 	messenger::MessageContent content;
 	std::vector<unsigned char> v_data(data, data + sizeof(data) / sizeof(unsigned char));
 	std::string s_user_id(user_id);
@@ -100,12 +100,12 @@ extern "C" void call_send_message(CMessengerBackend* pObject, char* user_id, uns
 	pObject->send_message(s_user_id, content);
 }
 
-extern "C" void call_send_message_seen(CMessengerBackend* pObject, char* user_id, char* message_id) {
+extern "C" __declspec(dllexport) void _cdecl call_send_message_seen(CMessengerBackend* pObject, char* user_id, char* message_id) {
 	std::string s_user_id(user_id);
 	std::string s_message_id(message_id);
 	pObject->send_message_seen(s_user_id, s_message_id);
 }
 
-extern "C" void call_request_active_users(CMessengerBackend* pObject) {
+extern "C" __declspec(dllexport) void _cdecl call_request_active_users(CMessengerBackend* pObject) {
 	pObject->request_active_users();
 }
