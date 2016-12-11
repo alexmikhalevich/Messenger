@@ -16,10 +16,10 @@
         <ListBox Grid.Column="0" Grid.Row="0" Grid.RowSpan="2">
             
         </ListBox>
-        <TextBox Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" IsReadOnly="True" IsEnabled="False"/>
-        <TextBox x:Name="message_input_textbox" Grid.Column="1" Grid.Row="1"/>
+        <RichTextBox x:Name="output_textbox" Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" IsReadOnly="True" IsEnabled="False"/>
+        <TextBox x:Name="message_input_textbox" Grid.Column="1" Grid.Row="1" KeyDown="message_input_textbox_KeyDown" IsEnabled="False"/>
         <Button x:Name="login_button" Grid.Column="3" Grid.Row="1" Content="Login" Click="Send_Click" />
-        <Button x:Name="send_file_button" Grid.Column="2" Grid.Row="1" Content="Attach" Click="Attach_Click" />
+        <Button x:Name="send_file_button" Grid.Column="2" Grid.Row="1" Content="Attach" Click="Attach_Click" IsEnabled="False" />
         <ListBox x:Name="user_listbox" Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"/>
 
     </Grid>
