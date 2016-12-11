@@ -37,8 +37,7 @@ void CMessengerBackend::disconnect() {
 }
 
 void CMessengerBackend::send_message(const std::string& user_id, const messenger::MessageContent& content) {
-	messenger::Message message = m_messenger_instance->SendMessage(user_id, content);
-	/*TODO*/
+	m_cur_message = m_messenger_instance->SendMessage(user_id, content);
 }
 
 void CMessengerBackend::send_message_seen(const std::string& user_id, const std::string& message_id) {
@@ -98,6 +97,17 @@ extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend
 		content.type = messenger::message_content_type::Text;
 	}
 	pObject->send_message(s_user_id, content);
+}
+
+extern "C" __declspec(dllexport) const char* _cdecl get_last_msg_id(CMessengerBackend* pObject) {
+	messenger::Message* cur_msg = pObject->get_cur_msg_instance();
+	const char* res = cur_msg->identifier.c_str();
+	return res;
+}
+
+extern "C" __declspec(dllexport) long int _cdecl get_last_msg_time(CMessengerBackend* pObject) {
+	messenger::Message* cur_msg = pObject->get_cur_msg_instance();
+	return static_cast<long int>(cur_msg->time);
 }
 
 extern "C" __declspec(dllexport) void _cdecl call_send_message_seen(CMessengerBackend* pObject, char* user_id, char* message_id) {
