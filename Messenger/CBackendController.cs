@@ -20,8 +20,7 @@ namespace Messenger {
         static private extern void call_disconnect(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
-            [In][Out] byte[] data, [MarshalAs(UnmanagedType.Bool)] Boolean encrypted,
-            [MarshalAs(UnmanagedType.U8)] byte type);
+            [In][Out] byte[] data, [MarshalAs(UnmanagedType.Bool)] Boolean encrypted, int type);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message_seen(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string message_id);
@@ -29,7 +28,7 @@ namespace Messenger {
         static private extern void call_request_active_users(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.LPStr)]
-        static private extern string get_last_msg_id(IntPtr pObject);
+        static private extern IntPtr get_last_msg_id(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern int get_last_msg_time(IntPtr pObject);
         #endregion PInvokes
@@ -61,7 +60,7 @@ namespace Messenger {
         public void Disconnect() {
             call_disconnect(m_native_object);
         }
-        public void SendMessage(string user_id, ref byte[] data, Boolean encrypted, byte type) {
+        public void SendMessage(string user_id, ref byte[] data, Boolean encrypted, int type) {
             call_send_message(m_native_object, user_id, data, encrypted, type);
         }
         public void SendMessageSeen(string user_id, string message_id) {
@@ -71,7 +70,8 @@ namespace Messenger {
             call_request_active_users(m_native_object);
         }
         public string GetLastMessageId() {
-            return get_last_msg_id(m_native_object);
+            IntPtr str_ptr = get_last_msg_id(m_native_object);
+            return Marshal.PtrToStringUni(str_ptr);
         }
         public DateTime GetLastMessageDate() {
             return new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(get_last_msg_time(m_native_object));
