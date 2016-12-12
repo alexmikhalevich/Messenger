@@ -29,13 +29,23 @@ namespace Messenger {
         public MainWindow() {
             InitializeComponent();
             m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList), 
-                new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd));
+                new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd),
+                new CModel.IncomingMessage(IncomingMessage));
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
         }
         public TextPointer GetMessageDocumentEnd() {
             return this.output_textbox.Document.ContentEnd;
+        }
+        public void IncomingMessage(string msg_id) {
+            if (this.message_input_textbox.IsFocused) {
+                m_model.SendMessageSeen(msg_id);
+            }
+            else {
+                m_model.AddUnreadMessage(msg_id);
+                MessengerWindow.Title += " <New messages>";
+            }
         }
         private void UpdateUserList(List<string> user_list) {
             this.user_listbox.Dispatcher.Invoke(DispatcherPriority.Background, new Action(() => {
@@ -118,6 +128,7 @@ namespace Messenger {
             m_model.CloseConnection();
         }
         private void message_input_textbox_GotFocus(object sender, RoutedEventArgs e) {
+            MessengerWindow.Title = "Messenger";
             m_model.AllMessagesSeen();
         }
     }
