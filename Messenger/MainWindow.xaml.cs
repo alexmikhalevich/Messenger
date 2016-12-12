@@ -45,9 +45,12 @@ namespace Messenger {
                 tr.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString(color));
             } catch (FormatException) { }
         }
-        private void _ShowMessage(string message, bool own_message) {
-            _AppendText(m_model.m_user_id + ": ", "Red");
-            _AppendText(message + "\r", "Black");
+        private void _SendMessage(string message) {
+            byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
+            CMessage msg = m_model.SendMessage(ref msg_arr, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
+            this.output_textbox.AppendText(msg.Content());
+            msg.UpdateTextRange();
+            msg.UpdateRepresentation();
         }
         private void Send_Click(object sender, RoutedEventArgs e) {
             if (!m_model.m_is_logged_in) {
@@ -63,10 +66,7 @@ namespace Messenger {
                 }
             }
             else {
-                //_ShowMessage(this.message_input_textbox.Text, true);
-                byte[] message = System.Text.Encoding.UTF8.GetBytes(this.message_input_textbox.Text);
-                string key = m_model.SendMessage(ref message, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
-                m_model.GetMessageById(key).Represent();
+                _SendMessage(this.message_input_textbox.Text);
             }
             this.message_input_textbox.Clear();
         }
@@ -91,7 +91,7 @@ namespace Messenger {
                 if (filename == "avi" || filename == "mkv" || filename == "mp4")
                     message_type = CModel.EMessageType.Video;
                 byte[] file_content = File.ReadAllBytes(filename);
-                m_model.SendMessage(ref file_content, message_type);
+                m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
             }
         }
         private void message_input_textbox_KeyDown(object sender, KeyEventArgs e) {
