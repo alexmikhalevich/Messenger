@@ -21,7 +21,6 @@ namespace Messenger {
         private TextRange m_message_range;
         private TextRange m_nick_range;
         private TextRange m_date_range;
-        //private TextPointer m_msg_begin;
         DateTime m_time;
         public EStatus status { get; set; }
         public CMessage(string user, string sender, ref byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer doc_end, DateTime time) {
