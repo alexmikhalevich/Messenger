@@ -29,13 +29,16 @@ namespace Messenger {
         private bool m_encryption;
         private bool m_login_probe;
         private UpdateUserListDelegate m_update_user_list_delegate;
-        public CModel(UpdateUserListDelegate upd_delegate) {
+        private GetMessageDocumentEnd m_get_message_document_end;
+        public CModel(UpdateUserListDelegate upd_delegate, GetMessageDocumentEnd get_msg_doc_delegate) {
             m_is_logged_in = false;
             m_messages = new Dictionary<string, CMessage>();
             m_login_probe = false;
             m_update_user_list_delegate = upd_delegate;
+            m_get_message_document_end = get_msg_doc_delegate;
         }
         public delegate void UpdateUserListDelegate(List<string> user_list);
+        public delegate TextPointer GetMessageDocumentEnd();
         public bool m_is_logged_in { get; set; }
         public string m_user_id { get; set; }
         public void Login(string user_id, string password, string server_address, ushort port, bool use_encryption) {
@@ -121,8 +124,23 @@ namespace Messenger {
                     break;
             }
         }
-        public void OnMessageReceived(IntPtr user_id, IntPtr msg_id, int time, int type, Boolean encrypted, byte[] data) {
+        public void OnMessageReceived(IntPtr user_id, IntPtr msg_id, int time, int type, byte[] data) {
             string uid = Marshal.PtrToStringUni(user_id);
+            string message_id = Marshal.PtrToStringUni(msg_id);
+            EMessageType msg_type = EMessageType.Text;
+            switch (type) {
+                case 0:
+                    msg_type = EMessageType.Text;
+                    break;
+                case 1:
+                    msg_type = EMessageType.Image;
+                    break;
+                case 2:
+                    msg_type = EMessageType.Video;
+                    break;
+            }
+            DateTime msg_date = new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(time);
+            CMessage msg = new CMessage(m_user_id, uid, ref data, msg_type, EStatus.Incoming, m_get_message_document_end(), msg_date);
         }
         public bool WasLoginProbe() {
             return m_login_probe;

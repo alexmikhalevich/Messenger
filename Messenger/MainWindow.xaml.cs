@@ -28,10 +28,14 @@ namespace Messenger {
         private DispatcherTimer m_request_users_timer;
         public MainWindow() {
             InitializeComponent();
-            m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList));
+            m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList), 
+                new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd));
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
+        }
+        public TextPointer GetMessageDocumentEnd() {
+            return this.output_textbox.Document.ContentEnd;
         }
         private void UpdateUserList(List<string> user_list) {
             this.user_listbox.Dispatcher.Invoke(DispatcherPriority.Background, new Action(() => {
@@ -65,18 +69,20 @@ namespace Messenger {
                 _LoginWindow(out user_id, out password, out server_address, out port, out use_encryption);
                 m_model.Login(user_id, password, server_address, port, use_encryption);
                 while (m_model.WasLoginProbe() == false) continue;
-                if(m_model.m_is_logged_in) {
+                if (m_model.m_is_logged_in) {
                     MessengerWindow.login_button.Content = "Send";
                     MessengerWindow.send_file_button.IsEnabled = true;
                     MessengerWindow.message_input_textbox.IsEnabled = true;
                     m_request_users_timer.Start();
                 }
-                else MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                else {
+                    m_model.ResetLoginProbe();
+                    MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
             else _SendMessage(this.message_input_textbox.Text);
             this.message_input_textbox.Clear();
         }
-
         private void Attach_Click(object sender, RoutedEventArgs e) {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.InitialDirectory = "c:\\";

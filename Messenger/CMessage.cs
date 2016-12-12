@@ -13,7 +13,8 @@ namespace Messenger {
         Sent,
         FailedToSend,
         Delivered,
-        Seen
+        Seen,
+        Incoming
     }
     class CMessage {
         private string m_sender;
