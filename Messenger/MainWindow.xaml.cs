@@ -48,9 +48,9 @@ namespace Messenger {
         private void _SendMessage(string message) {
             byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
             CMessage msg = m_model.SendMessage(ref msg_arr, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
-            this.output_textbox.AppendText(msg.Content());
-            msg.UpdateTextRange();
-            msg.UpdateRepresentation();
+            //this.output_textbox.AppendText(msg.Content());
+            //msg.UpdateTextRange();
+            //msg.UpdateRepresentation();
         }
         private void Send_Click(object sender, RoutedEventArgs e) {
             if (!m_model.m_is_logged_in) {
@@ -65,9 +65,7 @@ namespace Messenger {
                     MessengerWindow.message_input_textbox.IsEnabled = true;
                 }
             }
-            else {
-                _SendMessage(this.message_input_textbox.Text);
-            }
+            else _SendMessage(this.message_input_textbox.Text);
             this.message_input_textbox.Clear();
         }
 
@@ -104,7 +102,6 @@ namespace Messenger {
         }
         private void MessengerWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             m_model.CloseConnection();
-            MessengerWindow.Close();
         }
         private void message_input_textbox_GotFocus(object sender, RoutedEventArgs e) {
             m_model.AllMessagesSeen();

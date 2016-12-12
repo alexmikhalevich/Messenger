@@ -20,29 +20,38 @@ namespace Messenger {
         private string m_content;
         private TextRange m_message_range;
         private TextRange m_nick_range;
+        private TextRange m_date_range;
+        //private TextPointer m_msg_begin;
         DateTime m_time;
         public EStatus status { get; set; }
-        
-        public CMessage(string user, string sender, ref byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer msg_begin, DateTime time) {
+        public CMessage(string user, string sender, ref byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer doc_end, DateTime time) {
+            TextRange content_range = new TextRange(doc_end, doc_end);
             m_sender = sender;
             m_user = user;
-            if (msg_type == CModel.EMessageType.Text)
-                m_content = System.Text.Encoding.UTF8.GetString(msg_content) + "\r";
-            else if (msg_type == CModel.EMessageType.Image)
-                m_content = m_sender + " sent an image\r";
-            else
-                m_content = m_sender + " sent a video\r";
+            string msg_str;
+            string date_str = "<" + time.ToString() + ">";
+            if (msg_type == CModel.EMessageType.Text) {
+                msg_str = System.Text.Encoding.UTF8.GetString(msg_content);;
+                m_content = date_str + m_sender + ": " + msg_str + "\r";
+                
+            }
+            else if (msg_type == CModel.EMessageType.Image) {
+                msg_str = " sent an image\r";
+                m_content = date_str + m_sender + msg_str;
+            }
+            else {
+                msg_str = " sent a video\r";
+                m_content = date_str + m_sender + msg_str;
+            }
+            content_range.Text = m_content;
+            m_date_range = new TextRange(content_range.Start, content_range.Start.GetPositionAtOffset(date_str.Length));
+            m_nick_range = new TextRange(m_date_range.End, m_date_range.End.GetPositionAtOffset(m_sender.Length + 1));
+            m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length));
             status = msg_status;
-            m_nick_range.Select(msg_begin, msg_begin.GetPositionAtOffset(sender.Length + 2));
-            m_nick_range.Text = sender + ": ";
-            m_message_range.Select(msg_begin.GetPositionAtOffset(sender.Length + 2), msg_begin.GetPositionAtOffset(m_content.Length + sender.Length + 2));
-            m_message_range.Text = m_content;
+            UpdateRepresentation();
             m_time = time;
         }
-        public string Content() {
-            return m_content;
-        }
-        public void Represent() {
+        public void UpdateRepresentation() {
             BrushConverter bc = new BrushConverter();
             if (m_sender == m_user) {
                 m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Red"));
