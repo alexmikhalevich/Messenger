@@ -10,6 +10,7 @@ private:
 	callbacks::CRequestUserCallback* m_request_user_callback;
 	messenger::Message m_cur_message;
 	messenger::UserList m_online_users;
+	CMessageObserver* m_message_observer;
 	size_t m_cur_user;
 	void _set_settings(const std::string& server_url, unsigned short port, messenger::MessengerSettings& msg_settings);
 	void _set_policy(bool use_encryption, messenger::SecurityPolicy& sec_policy);
@@ -24,7 +25,7 @@ public:
 	const char* get_next_user();
 	const char* get_last_msg_id();
 	std::time_t get_last_msg_date();
-	//void register_observer(CMessageObserver* observer);
-	//void unregister_observer(CMessageObserver* observer);
+	void set_msg_status_changed_callback(pMessageStatusChanged callback_func);
+	void set_msg_received_callback(pMessageReceived callback_func);
 };
 

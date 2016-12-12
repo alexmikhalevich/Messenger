@@ -9,6 +9,8 @@ namespace Messenger {
     class CBackendController : IDisposable {
         public delegate void RequestUsersCallBack(int status);
         public delegate void LoginRequestCallback(int status);
+        public delegate void MessageStatusChangeCallback(IntPtr msg_id, int status);
+        public delegate void MessageReceivedCallback(IntPtr user_id, IntPtr msg_id, int time, int type, Boolean enrypted, byte[] data);
         #region PInvokes
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern IntPtr create_backend_instance([MarshalAs(UnmanagedType.LPStr)] string server_url, ushort port);
@@ -37,17 +39,29 @@ namespace Messenger {
         static private extern IntPtr get_next_user(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        static private extern void set_msg_status_changed_callback(IntPtr pObject, 
+            [MarshalAs(UnmanagedType.FunctionPtr)] MessageStatusChangeCallback pfResult);
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        static private extern void set_msg_received_callback(IntPtr pObject, [MarshalAs(UnmanagedType.FunctionPtr)] MessageReceivedCallback pfResult);
         #endregion PInvokes
         #region Members
         private IntPtr m_native_object;
         RequestUsersCallBack m_request_users_callback;
         LoginRequestCallback m_login_request_callback;
+        MessageStatusChangeCallback m_message_status_changed_callback;
+        MessageReceivedCallback m_message_received_callback;
         #endregion Members
-        public CBackendController(string server_url, ushort port, RequestUsersCallBack request_users_callback,
-            LoginRequestCallback login_request_callback) {
+        public CBackendController(string server_url, ushort port,
+            RequestUsersCallBack request_users_callback,
+            LoginRequestCallback login_request_callback,
+            MessageStatusChangeCallback msg_status_changed_callback, 
+            MessageReceivedCallback msg_received_callback) {
             m_native_object = create_backend_instance(server_url, port);
             m_request_users_callback = request_users_callback;
             m_login_request_callback = login_request_callback;
+            set_msg_status_changed_callback(m_native_object, msg_status_changed_callback);
+            set_msg_received_callback(m_native_object, msg_received_callback);
         }
         public void Dispose() {
             Dispose(true);
@@ -65,6 +79,12 @@ namespace Messenger {
             Dispose(false);
         }
         #region Wrapper methods
+        //public void SetMsgStatusChangedCallback(MessageStatusChangeCallback pfResult) {
+        //    set_msg_status_changed_callback(m_native_object, pfResult);
+        //}
+        //public void SetMsgReceivedCallback(MessageReceivedCallback pfResult) {
+        //    set_msg_received_callback(m_native_object, pfResult);
+        //}
         public void Login(string user_id, string password, Boolean encrypted) {
             call_login(m_native_object, user_id, password, encrypted, m_login_request_callback);
         }

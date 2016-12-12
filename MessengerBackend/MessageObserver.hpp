@@ -1,12 +1,24 @@
 #include "messenger\observers.h"
 
-class CMessageObserver : public messenger::IMessagesObserver {
-public:
-	void OnMessageStatusChanged(const messenger::MessageId& msgId, messenger::message_status::Type status) {
+typedef void(_stdcall *pMessageStatusChanged) (const char* msg_id, int status);
+typedef void(_stdcall *pMessageReceived) (const char* user_id, const char* msg_id, long int time, int type, bool encrypted, unsigned char* data);
 
+class CMessageObserver : public messenger::IMessagesObserver {
+private:
+	pMessageStatusChanged m_status_changed_callback;
+	pMessageReceived m_received_callback;
+public:
+	void set_status_changed_callback(pMessageStatusChanged callback) { m_status_changed_callback = callback;  }
+	void set_received_callback(pMessageReceived callback) { m_received_callback = callback; }
+	void OnMessageStatusChanged(const messenger::MessageId& msgId, messenger::message_status::Type status) {
+		m_status_changed_callback(msgId.c_str(), status);
 	}
 
 	void OnMessageReceived(const messenger::UserId& senderId, const messenger::Message& msg) {
-
+		unsigned char* data = new unsigned char[msg.content.data.size()];
+		for (size_t i = 0; i < msg.content.data.size(); ++i)
+			data[i] = msg.content.data[i];
+		m_received_callback(senderId.c_str(), msg.identifier.c_str(), static_cast<long int>(msg.time), 
+							msg.content.type, msg.content.encrypted, data);
 	}
 };

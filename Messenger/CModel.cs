@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace Messenger {
     class CModel {
@@ -40,7 +43,9 @@ namespace Messenger {
             m_encryption = use_encryption;
             m_backend = new CBackendController(server_address, port, 
                 new CBackendController.RequestUsersCallBack(ProcessUserRequestStatus),
-                new CBackendController.LoginRequestCallback(ProcessLoginRequestStatus));
+                new CBackendController.LoginRequestCallback(ProcessLoginRequestStatus),
+                new CBackendController.MessageStatusChangeCallback(OnMessageStatusChange),
+                new CBackendController.MessageReceivedCallback(OnMessageReceived));
             m_backend.Login(user_id, password, use_encryption);
         }
         public void RequestActiveUsers() {
@@ -93,6 +98,31 @@ namespace Messenger {
                 m_users.Add("Network error");
             }
             m_update_user_list_delegate(m_users);
+        }
+        public void OnMessageStatusChange(IntPtr msg_id, int status) {
+            string key = Marshal.PtrToStringUni(msg_id);
+            CMessage message = m_messages[key];
+            switch (status) {
+                case 0:         //Sending
+                    message.UpdateRepresentation(EStatus.Sending);
+                    break;
+                case 1:         //Sent
+                    message.UpdateRepresentation(EStatus.Sent);
+                    break;
+                case 2:         //Failed to send
+                    message.UpdateRepresentation(EStatus.FailedToSend);
+                    break;
+                case 3:         //Delivered
+                    message.UpdateRepresentation(EStatus.Delivered);
+                    break;
+                case 4:         //Seen
+                    message.UpdateRepresentation(EStatus.Seen);
+                    m_messages.Remove(key);
+                    break;
+            }
+        }
+        public void OnMessageReceived(IntPtr user_id, IntPtr msg_id, int time, int type, Boolean encrypted, byte[] data) {
+            string uid = Marshal.PtrToStringUni(user_id);
         }
         public bool WasLoginProbe() {
             return m_login_probe;

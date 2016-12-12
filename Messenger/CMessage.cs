@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 
@@ -18,10 +19,10 @@ namespace Messenger {
         private string m_sender;
         private string m_user;
         private string m_content;
-        private TextRange m_message_range;
-        private TextRange m_nick_range;
-        private TextRange m_date_range;
-        DateTime m_time;
+        private DateTime m_time;
+        public TextRange m_message_range { get; set; }
+        public TextRange m_nick_range { get; set; }
+        public TextRange m_date_range { get; set; }
         public EStatus status { get; set; }
         public CMessage(string user, string sender, ref byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer doc_end, DateTime time) {
             TextRange content_range = new TextRange(doc_end, doc_end);
@@ -47,16 +48,38 @@ namespace Messenger {
             m_nick_range = new TextRange(m_date_range.End, m_date_range.End.GetPositionAtOffset(m_sender.Length + 1));
             m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length));
             status = msg_status;
-            UpdateRepresentation();
+            UpdateRepresentation(EStatus.Sending);
             m_time = time;
         }
-        public void UpdateRepresentation() {
+        public void UpdateRepresentation(EStatus status) {
             BrushConverter bc = new BrushConverter();
-            if (m_sender == m_user) {
+            if (m_sender == m_user) 
                 m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Red"));
-            }
-            else {
-                m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Blue"));
+            else m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Blue"));
+            switch (status) {
+                case EStatus.Sending:
+                    m_date_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    m_nick_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    m_message_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    break;
+                case EStatus.Sent:
+                    m_date_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    m_nick_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    m_message_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    break;
+                case EStatus.FailedToSend:
+                    m_date_range.ApplyPropertyValue(TextElement.ForegroundProperty, Brushes.Red);
+                    break;
+                case EStatus.Delivered:
+                    m_date_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    m_nick_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    m_message_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Italic);
+                    break;
+                case EStatus.Seen:
+                    m_date_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    m_nick_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    m_message_range.ApplyPropertyValue(TextElement.FontStyleProperty, FontStyles.Normal);
+                    break;
             }
         }
     }

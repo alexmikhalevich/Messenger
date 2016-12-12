@@ -6,12 +6,14 @@ CMessengerBackend::CMessengerBackend(const std::string& server_url, unsigned sho
 	m_messenger_instance = messenger::GetMessengerInstance(msg_settings);
 	m_login_callback = new callbacks::CLoginCallback;
 	m_request_user_callback = new callbacks::CRequestUserCallback(&m_online_users);
+	m_message_observer = new CMessageObserver;
 	m_cur_user = 0;
 }
 
 CMessengerBackend::~CMessengerBackend() {
 	if (m_login_callback) delete m_login_callback;
 	if (m_request_user_callback) delete m_request_user_callback;
+	if (m_message_observer) delete m_message_observer;
 }
 
 void CMessengerBackend::_set_settings(const std::string& server_url, unsigned short port, messenger::MessengerSettings& msg_settings) {
@@ -69,6 +71,14 @@ const char* CMessengerBackend::get_last_msg_id() {
 
 std::time_t CMessengerBackend::get_last_msg_date() {
 	return m_cur_message.time;
+}
+
+void CMessengerBackend::set_msg_status_changed_callback(pMessageStatusChanged callback_func) {
+	m_message_observer->set_status_changed_callback(callback_func);
+}
+
+void CMessengerBackend::set_msg_received_callback(pMessageReceived callback_func) {
+	m_message_observer->set_received_callback(callback_func);
 }
 
 extern "C" __declspec(dllexport) CMessengerBackend* _cdecl create_backend_instance(char* server_url, unsigned short port) {
@@ -151,4 +161,12 @@ extern "C" __declspec(dllexport) void _cdecl call_send_message_seen(CMessengerBa
 
 extern "C" __declspec(dllexport) void _cdecl call_request_active_users(CMessengerBackend* pObject, callbacks::pManagedCallback callback_func) {
 	pObject->request_active_users(callback_func);
+}
+
+extern "C" __declspec(dllexport) void _cdecl set_msg_status_changed_callback(CMessengerBackend* pObject, pMessageStatusChanged callback_func) {
+	pObject->set_msg_status_changed_callback(callback_func);
+}
+
+extern "C" __declspec(dllexport) void _cdecl set_msg_received_callback(CMessengerBackend* pObject, pMessageReceived callback_func) {
+	pObject->set_msg_received_callback(callback_func);
 }
