@@ -15,7 +15,7 @@ private:
 public:
 	CMessengerBackend(const std::string& server_url, unsigned short port);
 	~CMessengerBackend();
-	void login(const std::string& user_id, const std::string& password, bool use_encryption);
+	void login(const std::string& user_id, const std::string& password, bool use_encryption, callbacks::pManagedCallback callback_func);
 	void disconnect();
 	void send_message(const std::string& user_id, const messenger::MessageContent& content);
 	void send_message_seen(const std::string& user_id, const std::string& message_id);

@@ -26,9 +26,10 @@ void CMessengerBackend::_set_policy(bool use_encryption, messenger::SecurityPoli
 	else sec_policy.encryptionAlgo = messenger::encryption_algorithm::None;
 }
 
-void CMessengerBackend::login(const std::string& user_id, const std::string& password, bool use_encryption) {
+void CMessengerBackend::login(const std::string& user_id, const std::string& password, bool use_encryption, callbacks::pManagedCallback callback_func) {
 	messenger::SecurityPolicy sec_policy;
 	CMessengerBackend::_set_policy(use_encryption, sec_policy);
+	m_login_callback->set_callback(callback_func);
 	m_messenger_instance->Login(user_id, password, sec_policy, m_login_callback);
 }
 
@@ -80,11 +81,12 @@ extern "C" __declspec(dllexport) void _cdecl dispose_class(CMessengerBackend* pO
 	}
 }
 
-extern "C" __declspec(dllexport) void _cdecl call_login(CMessengerBackend* pObject, char* user_id, char* password, bool use_encryption) {
+extern "C" __declspec(dllexport) void _cdecl call_login(CMessengerBackend* pObject, char* user_id, char* password, 
+														bool use_encryption, callbacks::pManagedCallback callback_func) {
 	if (pObject != NULL) {
 		std::string s_user_id(user_id);
 		std::string s_password(password);
-		pObject->login(s_user_id, s_password, use_encryption);
+		pObject->login(s_user_id, s_password, use_encryption, callback_func);
 	}
 }
 
@@ -134,10 +136,8 @@ extern "C" _declspec(dllexport) int _cdecl get_user_list_size(CMessengerBackend*
 	return pObject->get_user_list_size();
 }
 
-extern "C" _declspec(dllexport) const char** _cdecl get_user_list(CMessengerBackend* pObject) {
-	int size = 0;
-	const char** res_list = pObject->get_user_list(&size);
-	return res_list;
+extern "C" _declspec(dllexport) void _cdecl get_user_list(CMessengerBackend* pObject, const char** result, int size) {
+	result = pObject->get_user_list(&size);
 }
 
 extern "C" _declspec(dllexport) void _cdecl free_user_list(const char** arr, int size) {
