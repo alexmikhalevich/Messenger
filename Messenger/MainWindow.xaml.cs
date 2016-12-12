@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace Messenger {
     /// <summary>
@@ -23,11 +24,26 @@ namespace Messenger {
     public partial class MainWindow : Window {
         private CModel m_model;
         private const long MAX_FILE_SIZE = 209715200; //200 MB
+        private const int REQUEST_USERS_PERIOD = 5;
+        private DispatcherTimer m_request_users_timer;
         public MainWindow() {
             InitializeComponent();
             m_model = new CModel();
+            m_request_users_timer = new DispatcherTimer();
+            m_request_users_timer.Tick += new EventHandler(Request_Users);
+            m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
+            m_request_users_timer.Start();
         }
-
+        private void UpdateUserList(List<string> user_list) {
+            user_list.Clear();
+            foreach (string user in user_list)
+                this.user_listbox.Items.Add(user);
+        }
+        private void Request_Users(object sender, EventArgs e) {
+            List<string> user_list;
+            m_model.GetUserList(out user_list);
+            UpdateUserList(user_list);
+        }
         private void _LoginWindow(out string user_id, out string password, out string server_address, out ushort port, out bool use_encryption) {
             LoginWindow window = new LoginWindow();
             window.ShowDialog();
@@ -37,20 +53,9 @@ namespace Messenger {
             port = window.port;
             use_encryption = window.encryption_enabled;
         }
-        private void _AppendText(string message, string color) {
-            BrushConverter bc = new BrushConverter();
-            TextRange tr = new TextRange(output_textbox.Document.ContentEnd, output_textbox.Document.ContentEnd);
-            tr.Text = message;
-            try {
-                tr.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString(color));
-            } catch (FormatException) { }
-        }
         private void _SendMessage(string message) {
             byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
             CMessage msg = m_model.SendMessage(ref msg_arr, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
-            //this.output_textbox.AppendText(msg.Content());
-            //msg.UpdateTextRange();
-            //msg.UpdateRepresentation();
         }
         private void Send_Click(object sender, RoutedEventArgs e) {
             if (!m_model.m_is_logged_in) {

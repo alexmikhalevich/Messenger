@@ -4,8 +4,8 @@ CMessengerBackend::CMessengerBackend(const std::string& server_url, unsigned sho
 	messenger::MessengerSettings msg_settings;
 	CMessengerBackend::_set_settings(server_url, port, msg_settings);
 	m_messenger_instance = messenger::GetMessengerInstance(msg_settings);
-	m_login_callback = new CLoginCallback;
-	m_request_user_callback = new CRequestUserCallback;
+	m_login_callback = new callbacks::CLoginCallback;
+	m_request_user_callback = new callbacks::CRequestUserCallback(&m_online_users);
 }
 
 CMessengerBackend::~CMessengerBackend() {
@@ -44,8 +44,17 @@ void CMessengerBackend::send_message_seen(const std::string& user_id, const std:
 	m_messenger_instance->SendMessageSeen(user_id, message_id);
 }
 
-void CMessengerBackend::request_active_users() {
+void CMessengerBackend::request_active_users(callbacks::pManagedCallback callback_func) {
+	m_request_user_callback->set_callback(callback_func);
 	m_messenger_instance->RequestActiveUsers(m_request_user_callback);
+}
+
+const char** CMessengerBackend::get_user_list(int* size) {
+	const char** res_list = new char*[m_online_users.size()];
+	*size = m_online_users.size();
+	for (int i = 0; i < *size; ++i) 
+		res_list[i] = m_online_users[i].identifier.c_str();
+	return res_list;
 }
 
 const char* CMessengerBackend::get_last_msg_id() {
@@ -54,6 +63,10 @@ const char* CMessengerBackend::get_last_msg_id() {
 
 std::time_t CMessengerBackend::get_last_msg_date() {
 	return m_cur_message.time;
+}
+
+int CMessengerBackend::get_user_list_size() {
+	return m_online_users.size();
 }
 
 extern "C" __declspec(dllexport) CMessengerBackend* _cdecl create_backend_instance(char* server_url, unsigned short port) {
@@ -117,12 +130,28 @@ extern "C" __declspec(dllexport) long int _cdecl get_last_msg_time(CMessengerBac
 	return static_cast<long int>(res);
 }
 
+extern "C" _declspec(dllexport) int _cdecl get_user_list_size(CMessengerBackend* pObject) {
+	return pObject->get_user_list_size();
+}
+
+extern "C" _declspec(dllexport) const char** _cdecl get_user_list(CMessengerBackend* pObject) {
+	int size = 0;
+	const char** res_list = pObject->get_user_list(&size);
+	return res_list;
+}
+
+extern "C" _declspec(dllexport) void _cdecl free_user_list(const char** arr, int size) {
+	for (int i = 0; i < size; ++i)
+		delete arr[i];
+	delete arr;
+}
+
 extern "C" __declspec(dllexport) void _cdecl call_send_message_seen(CMessengerBackend* pObject, char* user_id, char* message_id) {
 	std::string s_user_id(user_id);
 	std::string s_message_id(message_id);
 	pObject->send_message_seen(s_user_id, s_message_id);
 }
 
-extern "C" __declspec(dllexport) void _cdecl call_request_active_users(CMessengerBackend* pObject) {
-	pObject->request_active_users();
+extern "C" __declspec(dllexport) void _cdecl call_request_active_users(CMessengerBackend* pObject, callbacks::pManagedCallback callback_func) {
+	pObject->request_active_users(callback_func);
 }
