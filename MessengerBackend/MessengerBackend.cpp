@@ -48,6 +48,14 @@ void CMessengerBackend::request_active_users() {
 	m_messenger_instance->RequestActiveUsers(m_request_user_callback);
 }
 
+const char* CMessengerBackend::get_last_msg_id() {
+	return m_cur_message.identifier.c_str();
+}
+
+std::time_t CMessengerBackend::get_last_msg_date() {
+	return m_cur_message.time;
+}
+
 extern "C" __declspec(dllexport) CMessengerBackend* _cdecl create_backend_instance(char* server_url, unsigned short port) {
 	return new CMessengerBackend(std::string(server_url), port);
 }
@@ -77,7 +85,7 @@ type = 1	text
 type = 2	image
 type = 3	video
 */
-extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, unsigned char type) {
+extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, int type) {
 	messenger::MessageContent content;
 	std::vector<unsigned char> v_data(data, data + sizeof(data) / sizeof(unsigned char));
 	std::string s_user_id(user_id);
@@ -100,14 +108,13 @@ extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend
 }
 
 extern "C" __declspec(dllexport) const char* _cdecl get_last_msg_id(CMessengerBackend* pObject) {
-	messenger::Message* cur_msg = pObject->get_cur_msg_instance();
-	const char* res = cur_msg->identifier.c_str();
+	const char* res = pObject->get_last_msg_id();
 	return res;
 }
 
 extern "C" __declspec(dllexport) long int _cdecl get_last_msg_time(CMessengerBackend* pObject) {
-	messenger::Message* cur_msg = pObject->get_cur_msg_instance();
-	return static_cast<long int>(cur_msg->time);
+	std::time_t res = pObject->get_last_msg_date();
+	return static_cast<long int>(res);
 }
 
 extern "C" __declspec(dllexport) void _cdecl call_send_message_seen(CMessengerBackend* pObject, char* user_id, char* message_id) {

@@ -19,7 +19,8 @@ public:
 	void send_message(const std::string& user_id, const messenger::MessageContent& content);
 	void send_message_seen(const std::string& user_id, const std::string& message_id);
 	void request_active_users();
-	messenger::Message* get_cur_msg_instance();
+	const char* get_last_msg_id();
+	std::time_t get_last_msg_date();
 	//void register_observer(CMessageObserver* observer);
 	//void unregister_observer(CMessageObserver* observer);
 };
