@@ -50,7 +50,7 @@ void CMessengerBackend::request_active_users(callbacks::pManagedCallback callbac
 }
 
 const char** CMessengerBackend::get_user_list(int* size) {
-	const char** res_list = new char*[m_online_users.size()];
+	const char** res_list = new const char*[m_online_users.size()];
 	*size = m_online_users.size();
 	for (int i = 0; i < *size; ++i) 
 		res_list[i] = m_online_users[i].identifier.c_str();
