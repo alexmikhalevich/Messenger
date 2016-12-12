@@ -28,20 +28,21 @@ namespace Messenger {
         private DispatcherTimer m_request_users_timer;
         public MainWindow() {
             InitializeComponent();
-            m_model = new CModel();
+            m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList));
             m_request_users_timer = new DispatcherTimer();
-            //m_request_users_timer.Tick += new EventHandler(Request_Users);
-            //m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
+            m_request_users_timer.Tick += new EventHandler(Request_Users);
+            m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
         }
         private void UpdateUserList(List<string> user_list) {
-            this.user_listbox.Items.Clear();
-            foreach (string user in user_list)
-                this.user_listbox.Items.Add(user);
+            this.user_listbox.Dispatcher.Invoke(DispatcherPriority.Background, new Action(() => {
+                this.user_listbox.Items.Clear();
+                foreach (string user in user_list) {
+                    this.user_listbox.Items.Add(user);
+                }
+            }));
         }
         private void Request_Users(object sender, EventArgs e) {
-            List<string> user_list;
-            m_model.RequestActiveUsers(out user_list);
-            UpdateUserList(user_list);
+            m_model.RequestActiveUsers();
         }
         private void _LoginWindow(out string user_id, out string password, out string server_address, out ushort port, out bool use_encryption) {
             LoginWindow window = new LoginWindow();
@@ -63,11 +64,12 @@ namespace Messenger {
                 bool use_encryption;
                 _LoginWindow(out user_id, out password, out server_address, out port, out use_encryption);
                 m_model.Login(user_id, password, server_address, port, use_encryption);
+                while (m_model.WasLoginProbe() == false) continue;
                 if(m_model.m_is_logged_in) {
                     MessengerWindow.login_button.Content = "Send";
                     MessengerWindow.send_file_button.IsEnabled = true;
                     MessengerWindow.message_input_textbox.IsEnabled = true;
-                    //m_request_users_timer.Start();
+                    m_request_users_timer.Start();
                 }
                 else MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -100,7 +102,7 @@ namespace Messenger {
         }
         private void message_input_textbox_KeyDown(object sender, KeyEventArgs e) {
             if (e.Key == Key.Enter && !Keyboard.IsKeyDown(Key.LeftCtrl)) {
-                this.send_file_button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                this.login_button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             }
             else if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftCtrl)) {
                 message_input_textbox.Text += "\r";

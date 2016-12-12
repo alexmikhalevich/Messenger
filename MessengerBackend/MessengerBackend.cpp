@@ -6,6 +6,7 @@ CMessengerBackend::CMessengerBackend(const std::string& server_url, unsigned sho
 	m_messenger_instance = messenger::GetMessengerInstance(msg_settings);
 	m_login_callback = new callbacks::CLoginCallback;
 	m_request_user_callback = new callbacks::CRequestUserCallback(&m_online_users);
+	m_cur_user = 0;
 }
 
 CMessengerBackend::~CMessengerBackend() {
@@ -50,12 +51,16 @@ void CMessengerBackend::request_active_users(callbacks::pManagedCallback callbac
 	m_messenger_instance->RequestActiveUsers(m_request_user_callback);
 }
 
-const char** CMessengerBackend::get_user_list(int* size) {
-	const char** res_list = new const char*[m_online_users.size()];
-	*size = m_online_users.size();
-	for (int i = 0; i < *size; ++i) 
-		res_list[i] = m_online_users[i].identifier.c_str();
-	return res_list;
+const char* CMessengerBackend::get_next_user() {
+	if (m_cur_user < m_online_users.size()) {
+		const char* res = m_online_users.at(m_cur_user).identifier.c_str();
+		++m_cur_user;
+		return res;
+	}
+	else {
+		m_cur_user = 0;
+		return NULL;
+	}
 }
 
 const char* CMessengerBackend::get_last_msg_id() {
@@ -64,10 +69,6 @@ const char* CMessengerBackend::get_last_msg_id() {
 
 std::time_t CMessengerBackend::get_last_msg_date() {
 	return m_cur_message.time;
-}
-
-int CMessengerBackend::get_user_list_size() {
-	return m_online_users.size();
 }
 
 extern "C" __declspec(dllexport) CMessengerBackend* _cdecl create_backend_instance(char* server_url, unsigned short port) {
@@ -132,12 +133,8 @@ extern "C" __declspec(dllexport) long int _cdecl get_last_msg_time(CMessengerBac
 	return static_cast<long int>(res);
 }
 
-extern "C" _declspec(dllexport) int _cdecl get_user_list_size(CMessengerBackend* pObject) {
-	return pObject->get_user_list_size();
-}
-
-extern "C" _declspec(dllexport) void _cdecl get_user_list(CMessengerBackend* pObject, const char** result, int size) {
-	result = pObject->get_user_list(&size);
+extern "C" _declspec(dllexport) const char* _cdecl get_next_user(CMessengerBackend* pObject) {
+	return pObject->get_next_user();
 }
 
 extern "C" _declspec(dllexport) void _cdecl free_user_list(const char** arr, int size) {

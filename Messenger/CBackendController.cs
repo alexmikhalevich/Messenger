@@ -34,9 +34,7 @@ namespace Messenger {
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern int get_last_msg_time(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        static private extern int get_user_list_size(IntPtr pObject);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        static private extern void get_user_list(IntPtr pObject, out IntPtr[] result, int size);
+        static private extern IntPtr get_next_user(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
         #endregion PInvokes
@@ -90,13 +88,12 @@ namespace Messenger {
             return new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(get_last_msg_time(m_native_object));
         }
         public List<string> GetUserList() {
-            int user_list_size = get_user_list_size(m_native_object);
             List<string> res = new List<string>();
-            IntPtr[] ptr_list;
-            get_user_list(m_native_object, out ptr_list, user_list_size);
-            foreach (IntPtr ptr in ptr_list)
-                res.Add(Marshal.PtrToStringUni(ptr));
-            free_user_list(ptr_list, user_list_size);
+            IntPtr user_name_ptr = get_next_user(m_native_object);
+            while (user_name_ptr != IntPtr.Zero) {
+                res.Add(Marshal.PtrToStringUni(user_name_ptr));
+                user_name_ptr = get_next_user(m_native_object);
+            }
             return res;
         }
         #endregion Wrapper methods
