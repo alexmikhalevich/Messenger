@@ -1,7 +1,7 @@
 #include "include\messenger\callbacks.h"
 
 namespace callbacks {
-	typedef void(_cdecl *pManagedCallback) (int status);
+	typedef void(_stdcall *pManagedCallback) (int status);
 
 	class CLoginCallback : public messenger::ILoginCallback {
 	private:

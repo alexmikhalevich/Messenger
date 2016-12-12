@@ -37,7 +37,6 @@ namespace Messenger {
                 new CBackendController.RequestUsersCallBack(ProcessUserRequestStatus),
                 new CBackendController.LoginRequestCallback(ProcessLoginRequestStatus));
             m_backend.Login(user_id, password, use_encryption);
-            if(m_login_request_status == ERequestStatus.Ok) m_is_logged_in = true;
         }
         public void RequestActiveUsers(out List<string> user_list) {
             m_backend.RequestActiveUsers();
@@ -63,28 +62,30 @@ namespace Messenger {
                 return "Internal error";
             else return "Network error";
         }
-        private void _SetStatus(int status, ERequestStatus request_status) {
+        private void _SetStatus(int status, ref ERequestStatus request_status) {
             switch (status) {
-                case 1:         //Ok
+                case 0:         //Ok
                     m_users = m_backend.GetUserList();
                     request_status = ERequestStatus.Ok;
                     break;
-                case 2:         //AuthError
+                case 1:         //AuthError
                     request_status = ERequestStatus.AuthError;
                     break;
-                case 3:         //NetworkError
+                case 2:         //NetworkError
                     request_status = ERequestStatus.NetworkError;
                     break;
-                case 4:         //InternalError
+                case 3:         //InternalError
                     request_status = ERequestStatus.InternalError;
                     break;
             }
         }
         public void ProcessLoginRequestStatus(int status) {
-            _SetStatus(status, m_login_request_status);
+            _SetStatus(status, ref m_login_request_status);
+            if (m_login_request_status == ERequestStatus.Ok)
+                m_is_logged_in = true;
         }
         public void ProcessUserRequestStatus(int status) {
-            _SetStatus(status, m_user_request_status);
+            _SetStatus(status, ref m_user_request_status);
         }
         public CMessage SendMessage(ref byte[] message, EMessageType message_type, TextPointer msg_pointer) {
             int type = 1;

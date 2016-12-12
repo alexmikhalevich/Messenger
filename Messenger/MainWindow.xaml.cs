@@ -30,8 +30,8 @@ namespace Messenger {
             InitializeComponent();
             m_model = new CModel();
             m_request_users_timer = new DispatcherTimer();
-            m_request_users_timer.Tick += new EventHandler(Request_Users);
-            m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
+            //m_request_users_timer.Tick += new EventHandler(Request_Users);
+            //m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
         }
         private void UpdateUserList(List<string> user_list) {
             this.user_listbox.Items.Clear();
@@ -67,7 +67,7 @@ namespace Messenger {
                     MessengerWindow.login_button.Content = "Send";
                     MessengerWindow.send_file_button.IsEnabled = true;
                     MessengerWindow.message_input_textbox.IsEnabled = true;
-                    m_request_users_timer.Start();
+                    //m_request_users_timer.Start();
                 }
                 else MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
