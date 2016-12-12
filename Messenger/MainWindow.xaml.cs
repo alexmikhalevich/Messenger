@@ -32,16 +32,15 @@ namespace Messenger {
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
-            m_request_users_timer.Start();
         }
         private void UpdateUserList(List<string> user_list) {
-            user_list.Clear();
+            this.user_listbox.Items.Clear();
             foreach (string user in user_list)
                 this.user_listbox.Items.Add(user);
         }
         private void Request_Users(object sender, EventArgs e) {
             List<string> user_list;
-            m_model.GetUserList(out user_list);
+            m_model.RequestActiveUsers(out user_list);
             UpdateUserList(user_list);
         }
         private void _LoginWindow(out string user_id, out string password, out string server_address, out ushort port, out bool use_encryption) {
@@ -68,7 +67,9 @@ namespace Messenger {
                     MessengerWindow.login_button.Content = "Send";
                     MessengerWindow.send_file_button.IsEnabled = true;
                     MessengerWindow.message_input_textbox.IsEnabled = true;
+                    m_request_users_timer.Start();
                 }
+                else MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else _SendMessage(this.message_input_textbox.Text);
             this.message_input_textbox.Clear();

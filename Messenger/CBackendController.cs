@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace Messenger {
     class CBackendController : IDisposable {
-        static private int user_list_size = 20;
         public delegate void RequestUsersCallBack(int status);
+        public delegate void LoginRequestCallback(int status);
         #region PInvokes
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern IntPtr create_backend_instance([MarshalAs(UnmanagedType.LPStr)] string server_url, ushort port);
@@ -17,7 +17,8 @@ namespace Messenger {
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_login(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string password, 
-            [MarshalAs(UnmanagedType.Bool)] Boolean use_encryption);
+            [MarshalAs(UnmanagedType.Bool)] Boolean use_encryption,
+            [MarshalAs(UnmanagedType.FunctionPtr)] LoginRequestCallback pfResult);
         [DllImport("MessengerBackend.dll", CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_disconnect(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
@@ -35,18 +36,20 @@ namespace Messenger {
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern int get_user_list_size(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.LPArray, SizeConst=user_list_size)]
-        static private extern IntPtr[] get_user_list(IntPtr pObject);
+        static private extern void get_user_list(IntPtr pObject, out IntPtr[] result, int size);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
         #endregion PInvokes
         #region Members
         private IntPtr m_native_object;
         RequestUsersCallBack m_request_users_callback;
+        LoginRequestCallback m_login_request_callback;
         #endregion Members
-        public CBackendController(string server_url, ushort port, RequestUsersCallBack request_users_callback) {
+        public CBackendController(string server_url, ushort port, RequestUsersCallBack request_users_callback,
+            LoginRequestCallback login_request_callback) {
             m_native_object = create_backend_instance(server_url, port);
             m_request_users_callback = request_users_callback;
+            m_login_request_callback = login_request_callback;
         }
         public void Dispose() {
             Dispose(true);
@@ -65,7 +68,7 @@ namespace Messenger {
         }
         #region Wrapper methods
         public void Login(string user_id, string password, Boolean encrypted) {
-            call_login(m_native_object, user_id, password, encrypted);
+            call_login(m_native_object, user_id, password, encrypted, m_login_request_callback);
         }
         public void Disconnect() {
             call_disconnect(m_native_object);
@@ -87,12 +90,13 @@ namespace Messenger {
             return new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(get_last_msg_time(m_native_object));
         }
         public List<string> GetUserList() {
-            user_list_size = get_user_list_size(m_native_object);
+            int user_list_size = get_user_list_size(m_native_object);
             List<string> res = new List<string>();
-            IntPtr[] ptr_list = get_user_list(m_native_object);
-            foreach (IntPtr ptr in ptr_list) {
+            IntPtr[] ptr_list;
+            get_user_list(m_native_object, out ptr_list, user_list_size);
+            foreach (IntPtr ptr in ptr_list)
                 res.Add(Marshal.PtrToStringUni(ptr));
-            }
+            free_user_list(ptr_list, user_list_size);
             return res;
         }
         #endregion Wrapper methods
