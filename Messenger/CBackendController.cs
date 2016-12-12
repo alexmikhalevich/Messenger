@@ -36,9 +36,9 @@ namespace Messenger {
         static private extern int get_user_list_size(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.LPArray, SizeConst=user_list_size)]
-        static private IntPtr[] get_user_list(IntPtr pObject);
+        static private extern IntPtr[] get_user_list(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        static private void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
+        static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
         #endregion PInvokes
         #region Members
         private IntPtr m_native_object;
