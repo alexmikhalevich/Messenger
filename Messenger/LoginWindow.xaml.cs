@@ -40,5 +40,17 @@ namespace Messenger {
                 this.LoginWindow1.Close();
             }
         }
+
+        private void login_textbox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+            this.login_textbox.Clear();
+        }
+
+        private void password_textbox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+            this.password_textbox.Clear();
+        }
+
+        private void server_textbox_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+            this.server_textbox.Clear();
+        }
     }
 }
