@@ -4,9 +4,12 @@ namespace callbacks {
 	typedef void(_cdecl *pManagedCallback) (int status);
 
 	class CLoginCallback : public messenger::ILoginCallback {
+	private:
+		pManagedCallback m_callback;
 	public:
+		void set_callback(pManagedCallback callback_func) { m_callback = callback_func; }
 		void OnOperationResult(messenger::operation_result::Type result) {
-
+			m_callback(result);
 		}
 	};
 
