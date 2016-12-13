@@ -1,7 +1,5 @@
 #pragma once
-#include "messenger\messenger.h"
 #include "Callbacks.hpp"
-#include "MessageObserver.hpp"
 
 class CMessengerBackend {
 private:

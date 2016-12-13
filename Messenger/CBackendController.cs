@@ -9,8 +9,8 @@ namespace Messenger {
     class CBackendController : IDisposable {
         public delegate void RequestUsersCallBack(int status);
         public delegate void LoginRequestCallback(int status);
-        public delegate void MessageStatusChangeCallback(IntPtr msg_id, int status);
-        public delegate void MessageReceivedCallback(IntPtr user_id, IntPtr msg_id, int time, int type, byte[] data);
+        public delegate void MessageStatusChangeCallback(IntPtr msg_id, int str_len, int status);
+        public delegate void MessageReceivedCallback(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, byte[] data);
         #region PInvokes
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern IntPtr create_backend_instance([MarshalAs(UnmanagedType.LPStr)] string server_url, ushort port);
@@ -49,6 +49,8 @@ namespace Messenger {
         private IntPtr m_native_object;
         RequestUsersCallBack m_request_users_callback;
         LoginRequestCallback m_login_request_callback;
+        MessageStatusChangeCallback m_msg_status_changed_callback;
+        MessageReceivedCallback m_msg_received_callback;
         #endregion Members
         public CBackendController(string server_url, ushort port,
             RequestUsersCallBack request_users_callback,
@@ -58,8 +60,10 @@ namespace Messenger {
             m_native_object = create_backend_instance(server_url, port);
             m_request_users_callback = request_users_callback;
             m_login_request_callback = login_request_callback;
-            set_msg_status_changed_callback(m_native_object, msg_status_changed_callback);
-            set_msg_received_callback(m_native_object, msg_received_callback);
+            m_msg_status_changed_callback = msg_status_changed_callback;
+            m_msg_received_callback = msg_received_callback;
+            set_msg_status_changed_callback(m_native_object, m_msg_status_changed_callback);
+            set_msg_received_callback(m_native_object, m_msg_received_callback);
         }
         public void Dispose() {
             Dispose(true);

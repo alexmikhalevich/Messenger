@@ -4,9 +4,9 @@ CMessengerBackend::CMessengerBackend(const std::string& server_url, unsigned sho
 	messenger::MessengerSettings msg_settings;
 	CMessengerBackend::_set_settings(server_url, port, msg_settings);
 	m_messenger_instance = messenger::GetMessengerInstance(msg_settings);
-	m_login_callback = new callbacks::CLoginCallback;
-	m_request_user_callback = new callbacks::CRequestUserCallback(&m_online_users);
 	m_message_observer = new CMessageObserver;
+	m_login_callback = new callbacks::CLoginCallback(m_messenger_instance, m_message_observer);
+	m_request_user_callback = new callbacks::CRequestUserCallback(&m_online_users);
 	m_cur_user = 0;
 }
 
@@ -37,6 +37,7 @@ void CMessengerBackend::login(const std::string& user_id, const std::string& pas
 }
 
 void CMessengerBackend::disconnect() {
+	m_messenger_instance->UnregisterObserver(m_message_observer);
 	m_messenger_instance->Disconnect();
 }
 

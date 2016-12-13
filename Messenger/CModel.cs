@@ -112,8 +112,10 @@ namespace Messenger {
             }
             m_update_user_list_delegate(m_users);
         }
-        public void OnMessageStatusChange(IntPtr msg_id, int status) {
-            string key = Marshal.PtrToStringUni(msg_id);
+        public void OnMessageStatusChange(IntPtr msg_id, int str_len, int status) {
+            byte[] msg_id_in_bytes = new byte[str_len];
+            Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
+            string key = Encoding.UTF8.GetString(msg_id_in_bytes);
             CMessage message = m_messages[key];
             switch (status) {
                 case 0:         //Sending
@@ -134,9 +136,15 @@ namespace Messenger {
                     break;
             }
         }
-        public void OnMessageReceived(IntPtr user_id, IntPtr msg_id, int time, int type, byte[] data) {
-            string uid = Marshal.PtrToStringUni(user_id);
-            string message_id = Marshal.PtrToStringUni(msg_id);
+        public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, byte[] data) {
+            byte[] usr_id_in_bytes = new byte[user_id_len];
+            Marshal.Copy(user_id, usr_id_in_bytes, 0, user_id_len);
+            string uid = Encoding.UTF8.GetString(usr_id_in_bytes);
+
+            byte[] msg_id_in_bytes = new byte[msg_id_len];
+            Marshal.Copy(msg_id, msg_id_in_bytes, 0, msg_id_len);
+            string message_id = Encoding.UTF8.GetString(msg_id_in_bytes);
+
             EMessageType msg_type = EMessageType.Text;
             switch (type) {
                 case 0:
