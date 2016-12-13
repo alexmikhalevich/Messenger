@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Messenger {
     class CModel {
@@ -116,40 +117,42 @@ namespace Messenger {
             m_update_user_list_delegate(m_users);
         }
         public void OnMessageStatusChange(IntPtr msg_id, int str_len, int status) {
-            new Thread(() => {
-                byte[] msg_id_in_bytes = new byte[str_len];
-                Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
-                string key = Encoding.UTF8.GetString(msg_id_in_bytes);
+            byte[] msg_id_in_bytes = new byte[str_len];
+            Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
+            string key = Encoding.ASCII.GetString(msg_id_in_bytes);
+            Task.Run(() => {
                 if (!m_messages.ContainsKey(key)) m_no_message.WaitOne();
                 CMessage message = m_messages[key];
                 switch (status) {
                     case 0:         //Sending
-                        message.UpdateRepresentation(EStatus.Sending);
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Sending); }));
                         break;
                     case 1:         //Sent
-                        message.UpdateRepresentation(EStatus.Sent);
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Sent); }));
                         break;
                     case 2:         //Failed to send
-                        message.UpdateRepresentation(EStatus.FailedToSend);
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.FailedToSend); }));
                         break;
                     case 3:         //Delivered
-                        message.UpdateRepresentation(EStatus.Delivered);
+                        //message.UpdateRepresentation(EStatus.Delivered);
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Delivered); }));
                         break;
                     case 4:         //Seen
-                        message.UpdateRepresentation(EStatus.Seen);
+                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Seen); }));
                         m_messages.Remove(key);
                         break;
                 }
-            }).Start();
+            });
         }
-        public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, IntPtr data_ptr, int data_size) {
+        public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, 
+            int time, int type, IntPtr data_ptr, int data_size) {
             byte[] usr_id_in_bytes = new byte[user_id_len];
             Marshal.Copy(user_id, usr_id_in_bytes, 0, user_id_len);
             string uid = Encoding.UTF8.GetString(usr_id_in_bytes);
 
             byte[] msg_id_in_bytes = new byte[msg_id_len];
             Marshal.Copy(msg_id, msg_id_in_bytes, 0, msg_id_len);
-            string message_id = Encoding.UTF8.GetString(msg_id_in_bytes);
+            string message_id = Encoding.ASCII.GetString(msg_id_in_bytes);
 
             byte[] data = new byte[data_size];
             Marshal.Copy(data_ptr, data, 0, data_size);

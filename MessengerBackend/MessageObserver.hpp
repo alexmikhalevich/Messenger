@@ -8,14 +8,18 @@ class CMessageObserver : public messenger::IMessagesObserver {
 private:
 	pMessageStatusChanged m_status_changed_callback;
 	pMessageReceived m_received_callback;
+	messenger::UserId m_user;
 public:
 	void set_status_changed_callback(pMessageStatusChanged callback) { m_status_changed_callback = callback;  }
 	void set_received_callback(pMessageReceived callback) { m_received_callback = callback; }
+	void set_user(const messenger::UserId& user) { m_user = user; }
 	void OnMessageStatusChanged(const messenger::MessageId& msgId, messenger::message_status::Type status) {
-		m_status_changed_callback(msgId.c_str(), msgId.length(), status);
+		const char* msg_id_ptr = msgId.c_str();
+		m_status_changed_callback(msg_id_ptr, msgId.length(), status);
 	}
 
 	void OnMessageReceived(const messenger::UserId& senderId, const messenger::Message& msg) {
+		if (senderId == m_user) return;
 		unsigned char* data = new unsigned char[msg.content.data.size()];
 		for (size_t i = 0; i < msg.content.data.size(); ++i)
 			data[i] = msg.content.data[i];

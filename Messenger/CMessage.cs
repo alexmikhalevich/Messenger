@@ -47,7 +47,7 @@ namespace Messenger {
             content_range.Text = m_content;
             m_date_range = new TextRange(content_range.Start, content_range.Start.GetPositionAtOffset(date_str.Length));
             m_nick_range = new TextRange(m_date_range.End, m_date_range.End.GetPositionAtOffset(m_sender.Length + 1));
-            m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length));
+            m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length + 1));
             status = msg_status;
             UpdateRepresentation(EStatus.Sending);
             m_time = time;

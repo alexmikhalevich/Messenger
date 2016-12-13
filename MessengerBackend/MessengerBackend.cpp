@@ -33,6 +33,7 @@ void CMessengerBackend::login(const std::string& user_id, const std::string& pas
 	messenger::SecurityPolicy sec_policy;
 	CMessengerBackend::_set_policy(use_encryption, sec_policy);
 	m_login_callback->set_callback(callback_func);
+	m_message_observer->set_user(user_id);
 	m_messenger_instance->Login(user_id, password, sec_policy, m_login_callback);
 }
 

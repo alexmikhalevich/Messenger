@@ -86,7 +86,7 @@ namespace Messenger {
         }
         private void _SendMessage(string message) {
             byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
-            CMessage msg = m_model.SendMessage(ref msg_arr, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
+            m_model.SendMessage(ref msg_arr, CModel.EMessageType.Text, output_textbox.Document.ContentEnd);
         }
         private void Send_Click(object sender, RoutedEventArgs e) {
             if (!m_model.m_is_logged_in) {
@@ -109,9 +109,7 @@ namespace Messenger {
             }
             else {
                 string message_text = this.message_input_textbox.Text;
-                new Thread(() => {
-                    _SendMessage(message_text);
-                }).Start();
+                _SendMessage(message_text);
             }
             this.message_input_textbox.Clear();
         }
@@ -134,10 +132,8 @@ namespace Messenger {
                 CModel.EMessageType message_type = CModel.EMessageType.Image;
                 if (filename == "avi" || filename == "mkv" || filename == "mp4")
                     message_type = CModel.EMessageType.Video;
-                new Thread(() => {
-                    byte[] file_content = File.ReadAllBytes(filename);
-                    m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
-                }).Start();
+                byte[] file_content = File.ReadAllBytes(filename);
+                m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
             }
         }
         private void message_input_textbox_KeyDown(object sender, KeyEventArgs e) {
