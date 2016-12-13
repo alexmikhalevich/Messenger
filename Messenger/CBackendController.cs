@@ -104,7 +104,7 @@ namespace Messenger {
             IntPtr str_ptr = get_last_msg_id(m_native_object, out str_len);
             byte[] msg_id_in_bytes = new byte[str_len];
             Marshal.Copy(str_ptr, msg_id_in_bytes, 0, str_len);
-            return Encoding.UTF8.GetString(msg_id_in_bytes);
+            return Encoding.ASCII.GetString(msg_id_in_bytes);
         }
         public DateTime GetLastMessageDate() {
             return new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(get_last_msg_time(m_native_object));
