@@ -25,7 +25,7 @@ namespace Messenger {
         static private extern void call_disconnect(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
-            [In][Out] byte[] data, [MarshalAs(UnmanagedType.Bool)] Boolean encrypted, int type);
+            [In][Out] ref byte[] data, [MarshalAs(UnmanagedType.Bool)] Boolean encrypted, int type);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message_seen(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string message_id);
@@ -44,6 +44,8 @@ namespace Messenger {
             [MarshalAs(UnmanagedType.FunctionPtr)] MessageStatusChangeCallback pfResult);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void set_msg_received_callback(IntPtr pObject, [MarshalAs(UnmanagedType.FunctionPtr)] MessageReceivedCallback pfResult);
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        static private extern void free_data(IntPtr data_ptr);
         #endregion PInvokes
         #region Members
         private IntPtr m_native_object;
@@ -88,7 +90,7 @@ namespace Messenger {
             call_disconnect(m_native_object);
         }
         public void SendMessage(string user_id, ref byte[] data, Boolean encrypted, int type) {
-            call_send_message(m_native_object, user_id, data, encrypted, type);
+            call_send_message(m_native_object, user_id, ref data, encrypted, type);
         }
         public void SendMessageSeen(string user_id, string message_id) {
             call_send_message_seen(m_native_object, user_id, message_id);
@@ -117,6 +119,12 @@ namespace Messenger {
                 user_name_ptr = get_next_user(m_native_object, out str_len);
             }
             return res;
+        }
+        public void FreePtr(IntPtr data_ptr) {
+            if (data_ptr != IntPtr.Zero) {
+                free_data(data_ptr);
+                data_ptr = IntPtr.Zero;
+            }
         }
         #endregion Wrapper methods
     }

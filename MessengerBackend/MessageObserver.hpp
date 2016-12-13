@@ -2,7 +2,7 @@
 
 typedef void(_stdcall *pMessageStatusChanged) (const char* msg_id, int str_len, int status);
 typedef void(_stdcall *pMessageReceived) (const char* user_id, int user_id_len, const char* msg_id, int msg_len, long int time, 
-										  int type, bool encrypted, unsigned char* data);
+										  int type, bool encrypted, unsigned char* data, int data_size);
 
 class CMessageObserver : public messenger::IMessagesObserver {
 private:
@@ -20,6 +20,6 @@ public:
 		for (size_t i = 0; i < msg.content.data.size(); ++i)
 			data[i] = msg.content.data[i];
 		m_received_callback(senderId.c_str(), senderId.length(), msg.identifier.c_str(), msg.identifier.length(), static_cast<long int>(msg.time), 
-							msg.content.type, msg.content.encrypted, data);
+							msg.content.type, msg.content.encrypted, data, msg.content.data.size());
 	}
 };

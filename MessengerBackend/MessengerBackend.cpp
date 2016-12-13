@@ -174,3 +174,10 @@ extern "C" __declspec(dllexport) void _cdecl set_msg_status_changed_callback(CMe
 extern "C" __declspec(dllexport) void _cdecl set_msg_received_callback(CMessengerBackend* pObject, pMessageReceived callback_func) {
 	pObject->set_msg_received_callback(callback_func);
 }
+
+extern "C" __declspec(dllexport) void _cdecl free_data(unsigned char* data) {
+	if (data != NULL) {
+		delete data;
+		data = NULL;
+	}
+}

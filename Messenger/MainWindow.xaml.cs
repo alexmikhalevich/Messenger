@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -106,7 +107,12 @@ namespace Messenger {
                     MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            else _SendMessage(this.message_input_textbox.Text);
+            else {
+                string message_text = this.message_input_textbox.Text;
+                new Thread(() => {
+                    _SendMessage(message_text);
+                }).Start();
+            }
             this.message_input_textbox.Clear();
         }
         private void Attach_Click(object sender, RoutedEventArgs e) {
@@ -128,8 +134,10 @@ namespace Messenger {
                 CModel.EMessageType message_type = CModel.EMessageType.Image;
                 if (filename == "avi" || filename == "mkv" || filename == "mp4")
                     message_type = CModel.EMessageType.Video;
-                byte[] file_content = File.ReadAllBytes(filename);
-                m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
+                new Thread(() => {
+                    byte[] file_content = File.ReadAllBytes(filename);
+                    m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
+                }).Start();
             }
         }
         private void message_input_textbox_KeyDown(object sender, KeyEventArgs e) {

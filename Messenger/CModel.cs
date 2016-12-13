@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
@@ -34,6 +35,7 @@ namespace Messenger {
         private GetMessageDocumentEnd m_get_message_document_end;
         private IncomingMessage m_incoming_message;
         private SaveIncomingFile m_incoming_file;
+        private AutoResetEvent m_no_message;
         public CModel(UpdateUserListDelegate upd_delegate, GetMessageDocumentEnd get_msg_doc_delegate,
             IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate) {
             m_is_logged_in = false;
@@ -44,6 +46,7 @@ namespace Messenger {
             m_get_message_document_end = get_msg_doc_delegate;
             m_incoming_message = incoming_message_delegate;
             m_incoming_file = incoming_file_delegate;
+            m_no_message = new AutoResetEvent(false);
         }
         public delegate void UpdateUserListDelegate(List<string> user_list);
         public delegate TextPointer GetMessageDocumentEnd();
@@ -113,30 +116,33 @@ namespace Messenger {
             m_update_user_list_delegate(m_users);
         }
         public void OnMessageStatusChange(IntPtr msg_id, int str_len, int status) {
-            byte[] msg_id_in_bytes = new byte[str_len];
-            Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
-            string key = Encoding.UTF8.GetString(msg_id_in_bytes);
-            CMessage message = m_messages[key];
-            switch (status) {
-                case 0:         //Sending
-                    message.UpdateRepresentation(EStatus.Sending);
-                    break;
-                case 1:         //Sent
-                    message.UpdateRepresentation(EStatus.Sent);
-                    break;
-                case 2:         //Failed to send
-                    message.UpdateRepresentation(EStatus.FailedToSend);
-                    break;
-                case 3:         //Delivered
-                    message.UpdateRepresentation(EStatus.Delivered);
-                    break;
-                case 4:         //Seen
-                    message.UpdateRepresentation(EStatus.Seen);
-                    m_messages.Remove(key);
-                    break;
-            }
+            new Thread(() => {
+                byte[] msg_id_in_bytes = new byte[str_len];
+                Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
+                string key = Encoding.UTF8.GetString(msg_id_in_bytes);
+                if (!m_messages.ContainsKey(key)) m_no_message.WaitOne();
+                CMessage message = m_messages[key];
+                switch (status) {
+                    case 0:         //Sending
+                        message.UpdateRepresentation(EStatus.Sending);
+                        break;
+                    case 1:         //Sent
+                        message.UpdateRepresentation(EStatus.Sent);
+                        break;
+                    case 2:         //Failed to send
+                        message.UpdateRepresentation(EStatus.FailedToSend);
+                        break;
+                    case 3:         //Delivered
+                        message.UpdateRepresentation(EStatus.Delivered);
+                        break;
+                    case 4:         //Seen
+                        message.UpdateRepresentation(EStatus.Seen);
+                        m_messages.Remove(key);
+                        break;
+                }
+            }).Start();
         }
-        public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, byte[] data) {
+        public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, IntPtr data_ptr, int data_size) {
             byte[] usr_id_in_bytes = new byte[user_id_len];
             Marshal.Copy(user_id, usr_id_in_bytes, 0, user_id_len);
             string uid = Encoding.UTF8.GetString(usr_id_in_bytes);
@@ -144,6 +150,10 @@ namespace Messenger {
             byte[] msg_id_in_bytes = new byte[msg_id_len];
             Marshal.Copy(msg_id, msg_id_in_bytes, 0, msg_id_len);
             string message_id = Encoding.UTF8.GetString(msg_id_in_bytes);
+
+            byte[] data = new byte[data_size];
+            Marshal.Copy(data_ptr, data, 0, data_size);
+            m_backend.FreePtr(data_ptr);
 
             EMessageType msg_type = EMessageType.Text;
             switch (type) {
@@ -188,6 +198,7 @@ namespace Messenger {
             DateTime msg_date = m_backend.GetLastMessageDate();
             CMessage msg = new CMessage(m_user_id, m_user_id, ref message, message_type, EStatus.Sending, msg_pointer, msg_date);
             m_messages.Add(key, msg);
+            m_no_message.Set();
             return msg;
         }
         public void AddUnreadMessage(string id) {
