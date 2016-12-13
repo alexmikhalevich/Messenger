@@ -116,9 +116,11 @@ type = 1	text
 type = 2	image
 type = 3	video
 */
-extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend* pObject, char* user_id, unsigned char* data, bool encrypted, int type) {
+extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend* pObject, char* user_id,
+															   unsigned char* data, int data_size, bool encrypted, int type) {
 	messenger::MessageContent content;
-	std::vector<unsigned char> v_data(data, data + sizeof(data) / sizeof(unsigned char));
+	std::vector<unsigned char> v_data(data_size);
+	for (int i = 0; i < data_size; ++i) v_data[i] = data[i];
 	std::string s_user_id(user_id);
 	content.data = v_data;
 	content.encrypted = encrypted;
