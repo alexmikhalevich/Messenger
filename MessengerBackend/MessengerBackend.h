@@ -22,8 +22,8 @@ public:
 	void send_message(const std::string& user_id, const messenger::MessageContent& content);
 	void send_message_seen(const std::string& user_id, const std::string& message_id);
 	void request_active_users(callbacks::pManagedCallback callback_func);
-	const char* get_next_user();
-	const char* get_last_msg_id();
+	const char* get_next_user(int* str_len);
+	const char* get_last_msg_id(int* str_len);
 	std::time_t get_last_msg_date();
 	void set_msg_status_changed_callback(pMessageStatusChanged callback_func);
 	void set_msg_received_callback(pMessageReceived callback_func);

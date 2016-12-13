@@ -53,19 +53,22 @@ void CMessengerBackend::request_active_users(callbacks::pManagedCallback callbac
 	m_messenger_instance->RequestActiveUsers(m_request_user_callback);
 }
 
-const char* CMessengerBackend::get_next_user() {
+const char* CMessengerBackend::get_next_user(int* str_len) {
 	if (m_cur_user < m_online_users.size()) {
+		*str_len = m_online_users.at(m_cur_user).identifier.length();
 		const char* res = m_online_users.at(m_cur_user).identifier.c_str();
 		++m_cur_user;
 		return res;
 	}
 	else {
 		m_cur_user = 0;
+		*str_len = 0;
 		return NULL;
 	}
 }
 
-const char* CMessengerBackend::get_last_msg_id() {
+const char* CMessengerBackend::get_last_msg_id(int* str_len) {
+	*str_len = m_cur_message.identifier.length();
 	return m_cur_message.identifier.c_str();
 }
 
@@ -133,8 +136,8 @@ extern "C" __declspec(dllexport) void _cdecl call_send_message(CMessengerBackend
 	pObject->send_message(s_user_id, content);
 }
 
-extern "C" __declspec(dllexport) const char* _cdecl get_last_msg_id(CMessengerBackend* pObject) {
-	const char* res = pObject->get_last_msg_id();
+extern "C" __declspec(dllexport) const char* _cdecl get_last_msg_id(CMessengerBackend* pObject, int* str_len) {
+	const char* res = pObject->get_last_msg_id(str_len);
 	return res;
 }
 
@@ -143,8 +146,8 @@ extern "C" __declspec(dllexport) long int _cdecl get_last_msg_time(CMessengerBac
 	return static_cast<long int>(res);
 }
 
-extern "C" _declspec(dllexport) const char* _cdecl get_next_user(CMessengerBackend* pObject) {
-	return pObject->get_next_user();
+extern "C" _declspec(dllexport) const char* _cdecl get_next_user(CMessengerBackend* pObject, int* str_len) {
+	return pObject->get_next_user(str_len);
 }
 
 extern "C" _declspec(dllexport) void _cdecl free_user_list(const char** arr, int size) {

@@ -32,11 +32,11 @@ namespace Messenger {
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_request_active_users(IntPtr pObject, [MarshalAs(UnmanagedType.FunctionPtr)] RequestUsersCallBack pfResult);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        static private extern IntPtr get_last_msg_id(IntPtr pObject);
+        static private extern IntPtr get_last_msg_id(IntPtr pObject, out int str_len);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern int get_last_msg_time(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
-        static private extern IntPtr get_next_user(IntPtr pObject);
+        static private extern IntPtr get_next_user(IntPtr pObject, out int str_len);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
@@ -49,8 +49,6 @@ namespace Messenger {
         private IntPtr m_native_object;
         RequestUsersCallBack m_request_users_callback;
         LoginRequestCallback m_login_request_callback;
-        MessageStatusChangeCallback m_message_status_changed_callback;
-        MessageReceivedCallback m_message_received_callback;
         #endregion Members
         public CBackendController(string server_url, ushort port,
             RequestUsersCallBack request_users_callback,
@@ -79,12 +77,6 @@ namespace Messenger {
             Dispose(false);
         }
         #region Wrapper methods
-        //public void SetMsgStatusChangedCallback(MessageStatusChangeCallback pfResult) {
-        //    set_msg_status_changed_callback(m_native_object, pfResult);
-        //}
-        //public void SetMsgReceivedCallback(MessageReceivedCallback pfResult) {
-        //    set_msg_received_callback(m_native_object, pfResult);
-        //}
         public void Login(string user_id, string password, Boolean encrypted) {
             call_login(m_native_object, user_id, password, encrypted, m_login_request_callback);
         }
@@ -101,18 +93,24 @@ namespace Messenger {
             call_request_active_users(m_native_object, m_request_users_callback);
         }
         public string GetLastMessageId() {
-            IntPtr str_ptr = get_last_msg_id(m_native_object);
-            return Marshal.PtrToStringUni(str_ptr);
+            int str_len;
+            IntPtr str_ptr = get_last_msg_id(m_native_object, out str_len);
+            byte[] msg_id_in_bytes = new byte[str_len];
+            Marshal.Copy(str_ptr, msg_id_in_bytes, 0, str_len);
+            return Encoding.UTF8.GetString(msg_id_in_bytes);
         }
         public DateTime GetLastMessageDate() {
             return new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(get_last_msg_time(m_native_object));
         }
         public List<string> GetUserList() {
             List<string> res = new List<string>();
-            IntPtr user_name_ptr = get_next_user(m_native_object);
+            int str_len;
+            IntPtr user_name_ptr = get_next_user(m_native_object, out str_len);
             while (user_name_ptr != IntPtr.Zero) {
-                res.Add(Marshal.PtrToStringUni(user_name_ptr));
-                user_name_ptr = get_next_user(m_native_object);
+                byte[] user_name_in_bytes = new byte[str_len];
+                Marshal.Copy(user_name_ptr, user_name_in_bytes, 0, str_len);
+                res.Add(Encoding.UTF8.GetString(user_name_in_bytes));
+                user_name_ptr = get_next_user(m_native_object, out str_len);
             }
             return res;
         }

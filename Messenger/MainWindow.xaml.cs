@@ -30,7 +30,8 @@ namespace Messenger {
             InitializeComponent();
             m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList), 
                 new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd),
-                new CModel.IncomingMessage(IncomingMessage));
+                new CModel.IncomingMessage(IncomingMessage),
+                new CModel.SaveIncomingFile(IncomingFile));
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
@@ -46,6 +47,21 @@ namespace Messenger {
                 m_model.AddUnreadMessage(msg_id);
                 MessengerWindow.Title += " <New messages>";
             }
+        }
+        public bool IncomingFile(string sender, bool is_image, out string filename) {
+            filename = "";
+            string caption = sender + " sent you " + (is_image ? "an image." : "a video.") + " Do you want to save this file?";
+            var res = MessageBox.Show(caption, "Incoming file", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (res == MessageBoxResult.Yes) {
+                SaveFileDialog fileDlg = new SaveFileDialog();
+                fileDlg.InitialDirectory = "c:\\";
+                bool? dlg_res = fileDlg.ShowDialog();
+                if (dlg_res == true) {
+                    filename = fileDlg.FileName;
+                    return true;
+                }
+            }
+            return false;
         }
         private void UpdateUserList(List<string> user_list) {
             this.user_listbox.Dispatcher.Invoke(DispatcherPriority.Background, new Action(() => {
