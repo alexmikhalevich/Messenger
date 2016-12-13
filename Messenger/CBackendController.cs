@@ -10,7 +10,8 @@ namespace Messenger {
         public delegate void RequestUsersCallBack(int status);
         public delegate void LoginRequestCallback(int status);
         public delegate void MessageStatusChangeCallback(IntPtr msg_id, int str_len, int status);
-        public delegate void MessageReceivedCallback(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, int time, int type, byte[] data);
+        public delegate void MessageReceivedCallback(IntPtr user_id, int user_id_len, IntPtr msg_id, 
+            int msg_id_len, int time, int type, IntPtr data, int data_size);
         #region PInvokes
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern IntPtr create_backend_instance([MarshalAs(UnmanagedType.LPStr)] string server_url, ushort port);
