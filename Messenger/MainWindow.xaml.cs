@@ -32,7 +32,8 @@ namespace Messenger {
             m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList), 
                 new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd),
                 new CModel.IncomingMessage(IncomingMessage),
-                new CModel.SaveIncomingFile(IncomingFile));
+                new CModel.SaveIncomingFile(IncomingFile),
+                SynchronizationContext.Current);
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);

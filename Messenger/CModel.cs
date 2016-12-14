@@ -67,8 +67,9 @@ namespace Messenger {
         private GetMessageDocumentEnd m_get_message_document_end;
         private IncomingMessage m_incoming_message;
         private SaveIncomingFile m_incoming_file;
+        private SynchronizationContext m_context;
         public CModel(UpdateUserListDelegate upd_delegate, GetMessageDocumentEnd get_msg_doc_delegate,
-            IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate) {
+            IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate, SynchronizationContext cntx) {
             m_is_logged_in = false;
             m_messages = new Dictionary<string, CMessage>();
             m_new_messages = new List<string>();
@@ -78,6 +79,7 @@ namespace Messenger {
             m_incoming_message = incoming_message_delegate;
             m_incoming_file = incoming_file_delegate;
             m_event_queue = new ConcurrentQueue<CQueueMessage>();
+            m_context = cntx;
         }
         public delegate void UpdateUserListDelegate(List<string> user_list);
         public delegate TextPointer GetMessageDocumentEnd();
@@ -102,19 +104,19 @@ namespace Messenger {
             CMessage message = m_messages[queue_msg.m_user_id];
             switch (queue_msg.m_status) {
                 case 0:         //Sending
-                    message.UpdateRepresentation(EStatus.Sending);
+                    message.UpdateRepresentation(EStatus.Sending, m_context);
                     break;
                 case 1:         //Sent
-                    message.UpdateRepresentation(EStatus.Sent);
+                    message.UpdateRepresentation(EStatus.Sent, m_context);
                     break;
                 case 2:         //Failed to send
-                    message.UpdateRepresentation(EStatus.FailedToSend);
+                    message.UpdateRepresentation(EStatus.FailedToSend, m_context);
                     break;
                 case 3:         //Delivered
-                    message.UpdateRepresentation(EStatus.Delivered);
+                    message.UpdateRepresentation(EStatus.Delivered, m_context);
                     break;
                 case 4:         //Seen
-                    message.UpdateRepresentation(EStatus.Seen);
+                    message.UpdateRepresentation(EStatus.Seen, m_context);
                     m_messages.Remove(queue_msg.m_user_id);
                     break;
             }
@@ -140,7 +142,7 @@ namespace Messenger {
                     break;
             }
             CMessage msg = new CMessage(m_user_id, m_user_id, queue_msg.m_data, msg_type, EStatus.Sending, 
-                queue_msg.m_text_ptr, msg_date);
+                queue_msg.m_text_ptr, msg_date, m_context);
             m_messages.Add(key, msg);
         }
 
@@ -158,7 +160,7 @@ namespace Messenger {
                     break;
             }
             CMessage msg = new CMessage(queue_msg.m_user_id, queue_msg.m_sender_id, queue_msg.m_data, msg_type,
-                EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date);
+                EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date, m_context);
             //string filename;
             //if (m_incoming_file(uid, msg_type == EMessageType.Image ? true : false, out filename))
             //    File.WriteAllBytes(filename, data);
