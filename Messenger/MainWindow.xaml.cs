@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -65,7 +66,6 @@ namespace Messenger {
                 SaveFileDialog fileDlg = new SaveFileDialog();
                 if (file_type == "ogg") fileDlg.Filter = "Video files | *.ogg";
                 else fileDlg.Filter = "Image files | *." + file_type;
-                fileDlg.InitialDirectory = "c:\\";
                 bool? dlg_res = fileDlg.ShowDialog();
                 if (dlg_res == true) {
                     filename = fileDlg.FileName;

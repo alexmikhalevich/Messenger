@@ -14,13 +14,13 @@ using System.Collections.Concurrent;
 
 namespace Messenger {
     class CSignatures {
-        public static const string GIF_SIGNATURE_1 = "474946383761";
-        public static const string GIF_SIGNATURE_2 = "474946383961";
-        public static const string BMP_SIGNATURE = "424D";
-        public static const string MP3_SIGNATURE_1 = "FFFB";
-        public static const string MP3_SIGNATURE_2 = "494433";
-        public static const string PNG_SIGNATURE = "89504E470D0A1A0A";
-        public static const string OGG_SIGNATURE = "4F676753";
+        public const string GIF_SIGNATURE_1 = "474946383761";
+        public const string GIF_SIGNATURE_2 = "474946383961";
+        public const string BMP_SIGNATURE = "424D";
+        //public const string MP3_SIGNATURE_1 = "FFFB";
+        //public const string MP3_SIGNATURE_2 = "494433";
+        public const string PNG_SIGNATURE = "89504E470D0A1A0A";
+        public const string OGG_SIGNATURE = "4F676753";
     }
     class CQueueMessage {
         public enum EType {
@@ -110,7 +110,10 @@ namespace Messenger {
             }
         }
         private void _ProcessUpdatedStatus(CQueueMessage queue_msg) {
-            CMessage message = m_messages[queue_msg.m_user_id];
+            CMessage message;
+            if (m_messages.ContainsKey(queue_msg.m_user_id))
+                message = m_messages[queue_msg.m_user_id];
+            else return;
             switch (queue_msg.m_status) {
                 case 0:         //Sending
                     message.UpdateRepresentation(EStatus.Sending, m_context);
@@ -171,10 +174,12 @@ namespace Messenger {
             CMessage msg = new CMessage(queue_msg.m_user_id, queue_msg.m_sender_id, queue_msg.m_data, msg_type,
                 EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date, m_context);
             m_messages.Add(queue_msg.m_message_id, msg);
-            string file_type = _GetFileType(queue_msg.m_data);
-            string filename;
-            if (m_incoming_file(queue_msg.m_sender_id, msg_type == EMessageType.Image ? true : false, out filename, file_type))
-                File.WriteAllBytes(filename, queue_msg.m_data);
+            if (msg_type != EMessageType.Text) {
+                string file_type = _GetFileType(queue_msg.m_data);
+                string filename;
+                if (m_incoming_file(queue_msg.m_sender_id, msg_type == EMessageType.Image ? true : false, out filename, file_type))
+                    File.WriteAllBytes(filename, queue_msg.m_data);
+            }
             m_incoming_message(queue_msg.m_message_id);
         }
         private bool _CheckGIF(ref byte[] file_content) {
