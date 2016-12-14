@@ -13,6 +13,15 @@ using System.Windows.Threading;
 using System.Collections.Concurrent;
 
 namespace Messenger {
+    class CSignatures {
+        public static const string GIF_SIGNATURE_1 = "474946383761";
+        public static const string GIF_SIGNATURE_2 = "474946383961";
+        public static const string BMP_SIGNATURE = "424D";
+        public static const string MP3_SIGNATURE_1 = "FFFB";
+        public static const string MP3_SIGNATURE_2 = "494433";
+        public static const string PNG_SIGNATURE = "89504E470D0A1A0A";
+        public static const string OGG_SIGNATURE = "4F676753";
+    }
     class CQueueMessage {
         public enum EType {
             StatusUpdated,
@@ -84,7 +93,7 @@ namespace Messenger {
         public delegate void UpdateUserListDelegate(List<string> user_list);
         public delegate TextPointer GetMessageDocumentEnd();
         public delegate void IncomingMessage(string msg_id);
-        public delegate bool SaveIncomingFile(string sender, bool is_image, out string filename);
+        public delegate bool SaveIncomingFile(string sender, bool is_image, out string filename, string file_type);
         public bool m_is_logged_in { get; set; }
         public string m_user_id { get; set; }
         public void EnqueueEvent(CQueueMessage queue_msg) {
@@ -162,10 +171,56 @@ namespace Messenger {
             CMessage msg = new CMessage(queue_msg.m_user_id, queue_msg.m_sender_id, queue_msg.m_data, msg_type,
                 EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date, m_context);
             m_messages.Add(queue_msg.m_message_id, msg);
-            //string filename;
-            //if (m_incoming_file(uid, msg_type == EMessageType.Image ? true : false, out filename))
-            //    File.WriteAllBytes(filename, data);
+            string file_type = _GetFileType(queue_msg.m_data);
+            string filename;
+            if (m_incoming_file(queue_msg.m_sender_id, msg_type == EMessageType.Image ? true : false, out filename, file_type))
+                File.WriteAllBytes(filename, queue_msg.m_data);
             m_incoming_message(queue_msg.m_message_id);
+        }
+        private bool _CheckGIF(ref byte[] file_content) {
+            if (file_content.Length < 6) return false;
+            else {
+                byte[] signature = { file_content[0], file_content[1], file_content[2], file_content[3], file_content[4], file_content[5] };
+                if (BitConverter.ToString(signature).Replace("-", string.Empty) == CSignatures.GIF_SIGNATURE_1
+                    || BitConverter.ToString(signature).Replace("-", string.Empty) == CSignatures.GIF_SIGNATURE_2)
+                    return true;
+            }
+            return false;
+        }
+        private bool _CheckBMP(ref byte[] file_content) {
+            if (file_content.Length < 2) return false;
+            else {
+                byte[] signature = { file_content[0], file_content[1] };
+                if (BitConverter.ToString(signature).Replace("-", string.Empty) == CSignatures.BMP_SIGNATURE)
+                    return true;
+            }
+            return false;
+        }
+        private bool _CheckPNG(ref byte[] file_content) {
+            if(file_content.Length < 8) return false;
+            else {
+                byte[] signature = { file_content[0], file_content[1], file_content[2], file_content[3], file_content[4],
+                                       file_content[5], file_content[6], file_content[7] };
+                if (BitConverter.ToString(signature).Replace("-", string.Empty) == CSignatures.PNG_SIGNATURE)
+                    return true;
+            }
+            return false;
+        }
+        private bool _CheckOGG(ref byte[] file_content) {
+            if(file_content.Length < 4) return false;
+            else {
+                byte[] signature = { file_content[0], file_content[1], file_content[2], file_content[3] };
+                if (BitConverter.ToString(signature).Replace("-", string.Empty) == CSignatures.OGG_SIGNATURE)
+                    return true;
+            }
+            return false;
+        }
+        private string _GetFileType(byte[] file_content) {
+            if (_CheckGIF(ref file_content)) return "gif";
+            else if (_CheckBMP(ref file_content)) return "bmp";
+            else if (_CheckPNG(ref file_content)) return "png";
+            else if (_CheckOGG(ref file_content)) return "ogg";
+            else return null;
         }
         public void Login(string user_id, string password, string server_address, ushort port, bool use_encryption) {
             m_user_id = user_id;
@@ -263,7 +318,7 @@ namespace Messenger {
             if(m_is_logged_in) m_backend.Disconnect();
         }
         public void SendMessageSeen(string id) {
-            m_backend.SendMessageSeen(m_messages[id].m_sender, id); //TODO: replace m_user_id
+            m_backend.SendMessageSeen(m_messages[id].m_sender, id);
             m_messages[id].UpdateRepresentation(EStatus.Seen, m_context);
             m_messages.Remove(id);
         }

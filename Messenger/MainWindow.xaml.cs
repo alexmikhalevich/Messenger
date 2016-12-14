@@ -24,7 +24,7 @@ namespace Messenger {
     /// </summary>
     public partial class MainWindow : Window {
         private CModel m_model;
-        private const long MAX_FILE_SIZE = 209715200; //200 MB
+        private const long MAX_FILE_SIZE = 50000000; //50 MB
         private const int REQUEST_USERS_PERIOD = 5;
         private DispatcherTimer m_request_users_timer;
         private string m_destination;
@@ -52,12 +52,19 @@ namespace Messenger {
                 MessengerWindow.Dispatcher.Invoke(() => { MessengerWindow.Title += " <New messages>"; });
             }
         }
-        public bool IncomingFile(string sender, bool is_image, out string filename) {
+        public bool IncomingFile(string sender, bool is_image, out string filename, string file_type) {
             filename = "";
+            if (file_type == null) {
+                MessageBox.Show(sender + " sent you file in unsupported format", "Incoming file",
+                    MessageBoxButton.OK, MessageBoxImage.Exclamation);
+                return false;
+            }
             string caption = sender + " sent you " + (is_image ? "an image." : "a video.") + " Do you want to save this file?";
             var res = MessageBox.Show(caption, "Incoming file", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res == MessageBoxResult.Yes) {
                 SaveFileDialog fileDlg = new SaveFileDialog();
+                if (file_type == "ogg") fileDlg.Filter = "Video files | *.ogg";
+                else fileDlg.Filter = "Image files | *." + file_type;
                 fileDlg.InitialDirectory = "c:\\";
                 bool? dlg_res = fileDlg.ShowDialog();
                 if (dlg_res == true) {
@@ -104,6 +111,7 @@ namespace Messenger {
                     MessengerWindow.login_button.Content = "Send";
                     MessengerWindow.send_file_button.IsEnabled = true;
                     MessengerWindow.message_input_textbox.IsEnabled = true;
+                    m_model.RequestActiveUsers();
                     m_request_users_timer.Start();
                     Task.Run(() => { m_model.ProcessEvents(); });
                 }
@@ -122,24 +130,29 @@ namespace Messenger {
         private void Attach_Click(object sender, RoutedEventArgs e) {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.InitialDirectory = "c:\\";
-            fileDialog.Filter = "Image Files(*.bmp;*.jpg;*.gif)|*.bmp;*.jpg;*.gif|Video files(*.avi, *.mkv, *.mp4)|*.avi;*.mkv;*.mp4";
+            fileDialog.Filter = "Image Files(*.bmp;*.gif;*.png)|*.bmp;*.gif;*.png|Video files(*.ogg)|*.ogg";
             fileDialog.FilterIndex = 1;
             bool? res = fileDialog.ShowDialog();
             if (res == true) {
                 string filename = fileDialog.FileName;
                 long filesize = new System.IO.FileInfo(filename).Length;
                 if (filesize > MAX_FILE_SIZE) {
-                    MessageBox.Show("Max file size is 200MB", "Too large file", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Max file size is " + (MAX_FILE_SIZE / 1000000).ToString() + "MB", 
+                        "Too large file", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
                 Char delimiter = '.';
                 var string_list = filename.Split(delimiter);
                 string filetype = string_list[string_list.Length - 1];
-                CModel.EMessageType message_type = CModel.EMessageType.Image;
-                if (filename == "avi" || filename == "mkv" || filename == "mp4")
-                    message_type = CModel.EMessageType.Video;
+                int message_type = 2;
+                if (filename == "ogg")
+                    message_type = 3;
                 byte[] file_content = File.ReadAllBytes(filename);
-                //m_model.SendMessage(ref file_content, message_type, output_textbox.Document.ContentEnd);
+                if (m_destination != null) {
+                    m_model.EnqueueEvent(new CQueueMessage(m_destination, 1, m_model.m_user_id, file_content, null,
+                        message_type, output_textbox.Document.ContentEnd));
+                }
+                else MessageBox.Show("You should choose destination user", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
             }
         }
         private void message_input_textbox_KeyDown(object sender, KeyEventArgs e) {
