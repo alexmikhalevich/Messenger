@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Messenger {
     enum EStatus {
@@ -25,7 +27,7 @@ namespace Messenger {
         public TextRange m_nick_range { get; set; }
         public TextRange m_date_range { get; set; }
         public EStatus status { get; set; }
-        public CMessage(string user, string sender, ref byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer doc_end, DateTime time) {
+        public CMessage(string user, string sender, byte[] msg_content, CModel.EMessageType msg_type, EStatus msg_status, TextPointer doc_end, DateTime time) {
             TextRange content_range = new TextRange(doc_end, doc_end);
             m_sender = sender;
             m_user = user;
@@ -54,8 +56,9 @@ namespace Messenger {
         }
         public void UpdateRepresentation(EStatus status) {
             BrushConverter bc = new BrushConverter();
-            if (m_sender == m_user) 
+            if (m_sender == m_user) {
                 m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Red"));
+            }
             else m_nick_range.ApplyPropertyValue(TextElement.ForegroundProperty, bc.ConvertFromString("Blue"));
             switch (status) {
                 case EStatus.Sending:

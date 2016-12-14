@@ -10,8 +10,38 @@ using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Collections.Concurrent;
 
 namespace Messenger {
+    class CQueueMessage {
+        public enum EType {
+            StatusUpdated,
+            SendRecv
+        }
+        public string m_user_id { get; set; }
+        public string m_sender_id { get; set; }
+        public byte[] m_data { get; set; }
+        public string m_message_id { get; set; }
+        public int m_status { get; set; }
+        public int m_type { get; set; }
+        public TextPointer m_text_ptr { get; set; }
+        public DateTime m_date { get; set; }
+        public CQueueMessage(string user_id, int status, string sender_id = null, byte[] data = null, string message_id = null, 
+            int type = -1, TextPointer text_ptr = null, DateTime date = new DateTime()) {
+            m_user_id = user_id;
+            m_status = status;
+            m_sender_id = sender_id;
+            m_data = data;
+            m_message_id = message_id;
+            m_text_ptr = text_ptr;
+            m_date = date;
+            m_type = type;
+        }
+        public EType Type() {
+            if (m_sender_id == null) return EType.StatusUpdated;
+            else return EType.SendRecv;
+        }
+    }
     class CModel {
         public enum EMessageType {
             Text,
@@ -24,19 +54,19 @@ namespace Messenger {
             NetworkError,
             InternalError
         }
+        ConcurrentQueue<CQueueMessage> m_event_queue;
+
         private Dictionary<string, CMessage> m_messages;
         private List<string> m_new_messages;
         private List<string> m_users;
         private CBackendController m_backend;
         private ERequestStatus m_user_request_status;
         private ERequestStatus m_login_request_status;
-        private bool m_encryption;
         private bool m_login_probe;
         private UpdateUserListDelegate m_update_user_list_delegate;
         private GetMessageDocumentEnd m_get_message_document_end;
         private IncomingMessage m_incoming_message;
         private SaveIncomingFile m_incoming_file;
-        private AutoResetEvent m_no_message;
         public CModel(UpdateUserListDelegate upd_delegate, GetMessageDocumentEnd get_msg_doc_delegate,
             IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate) {
             m_is_logged_in = false;
@@ -47,7 +77,7 @@ namespace Messenger {
             m_get_message_document_end = get_msg_doc_delegate;
             m_incoming_message = incoming_message_delegate;
             m_incoming_file = incoming_file_delegate;
-            m_no_message = new AutoResetEvent(false);
+            m_event_queue = new ConcurrentQueue<CQueueMessage>();
         }
         public delegate void UpdateUserListDelegate(List<string> user_list);
         public delegate TextPointer GetMessageDocumentEnd();
@@ -55,9 +85,87 @@ namespace Messenger {
         public delegate bool SaveIncomingFile(string sender, bool is_image, out string filename);
         public bool m_is_logged_in { get; set; }
         public string m_user_id { get; set; }
+        public void EnqueueEvent(CQueueMessage queue_msg) {
+            m_event_queue.Enqueue(queue_msg);
+        }
+        public void ProcessEvents() {
+            while (true) {
+                while (!m_event_queue.IsEmpty) {
+                    CQueueMessage msg;
+                    m_event_queue.TryDequeue(out msg);
+                    if (msg.Type() == CQueueMessage.EType.StatusUpdated) _ProcessUpdatedStatus(msg);
+                    else _ProcessSendRecv(msg);
+                }
+            }
+        }
+        private void _ProcessUpdatedStatus(CQueueMessage queue_msg) {
+            CMessage message = m_messages[queue_msg.m_user_id];
+            switch (queue_msg.m_status) {
+                case 0:         //Sending
+                    message.UpdateRepresentation(EStatus.Sending);
+                    break;
+                case 1:         //Sent
+                    message.UpdateRepresentation(EStatus.Sent);
+                    break;
+                case 2:         //Failed to send
+                    message.UpdateRepresentation(EStatus.FailedToSend);
+                    break;
+                case 3:         //Delivered
+                    message.UpdateRepresentation(EStatus.Delivered);
+                    break;
+                case 4:         //Seen
+                    message.UpdateRepresentation(EStatus.Seen);
+                    m_messages.Remove(queue_msg.m_user_id);
+                    break;
+            }
+        }
+        private void _ProcessSendRecv(CQueueMessage queue_msg) {
+            if (queue_msg.m_status == 5) _ProcessRecv(queue_msg);
+            else _ProcessSend(queue_msg);
+        }
+        private void _ProcessSend(CQueueMessage queue_msg) {
+            m_backend.SendMessage(m_user_id, queue_msg.m_data, queue_msg.m_type);
+            string key = m_backend.GetLastMessageId();
+            DateTime msg_date = m_backend.GetLastMessageDate();
+            EMessageType msg_type = EMessageType.Text;
+            switch(queue_msg.m_type) {
+                case 1:
+                    msg_type = EMessageType.Text;
+                    break;
+                case 2:
+                    msg_type = EMessageType.Image;
+                    break;
+                case 3:
+                    msg_type = EMessageType.Video;
+                    break;
+            }
+            CMessage msg = new CMessage(m_user_id, m_user_id, queue_msg.m_data, msg_type, EStatus.Sending, 
+                queue_msg.m_text_ptr, msg_date);
+            m_messages.Add(key, msg);
+        }
+
+        private void _ProcessRecv(CQueueMessage queue_msg) {
+            EMessageType msg_type = EMessageType.Text;
+            switch (queue_msg.m_type) {
+                case 0:
+                    msg_type = EMessageType.Text;
+                    break;
+                case 1:
+                    msg_type = EMessageType.Image;
+                    break;
+                case 2:
+                    msg_type = EMessageType.Video;
+                    break;
+            }
+            CMessage msg = new CMessage(queue_msg.m_user_id, queue_msg.m_sender_id, queue_msg.m_data, msg_type,
+                EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date);
+            //string filename;
+            //if (m_incoming_file(uid, msg_type == EMessageType.Image ? true : false, out filename))
+            //    File.WriteAllBytes(filename, data);
+            m_incoming_message(queue_msg.m_message_id);
+        }
         public void Login(string user_id, string password, string server_address, ushort port, bool use_encryption) {
             m_user_id = user_id;
-            m_encryption = use_encryption;
             m_backend = new CBackendController(server_address, port, 
                 new CBackendController.RequestUsersCallBack(ProcessUserRequestStatus),
                 new CBackendController.LoginRequestCallback(ProcessLoginRequestStatus),
@@ -120,29 +228,7 @@ namespace Messenger {
             byte[] msg_id_in_bytes = new byte[str_len];
             Marshal.Copy(msg_id, msg_id_in_bytes, 0, str_len);
             string key = Encoding.ASCII.GetString(msg_id_in_bytes);
-            Task.Run(() => {
-                if (!m_messages.ContainsKey(key)) m_no_message.WaitOne();
-                CMessage message = m_messages[key];
-                switch (status) {
-                    case 0:         //Sending
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Sending); }));
-                        break;
-                    case 1:         //Sent
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Sent); }));
-                        break;
-                    case 2:         //Failed to send
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.FailedToSend); }));
-                        break;
-                    case 3:         //Delivered
-                        //message.UpdateRepresentation(EStatus.Delivered);
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Delivered); }));
-                        break;
-                    case 4:         //Seen
-                        Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() => { message.UpdateRepresentation(EStatus.Seen); }));
-                        m_messages.Remove(key);
-                        break;
-                }
-            });
+           EnqueueEvent(new CQueueMessage(key, status));
         }
         public void OnMessageReceived(IntPtr user_id, int user_id_len, IntPtr msg_id, int msg_id_len, 
             int time, int type, IntPtr data_ptr, int data_size) {
@@ -157,52 +243,14 @@ namespace Messenger {
             byte[] data = new byte[data_size];
             Marshal.Copy(data_ptr, data, 0, data_size);
             m_backend.FreePtr(data_ptr);
-
-            EMessageType msg_type = EMessageType.Text;
-            switch (type) {
-                case 0:
-                    msg_type = EMessageType.Text;
-                    break;
-                case 1:
-                    msg_type = EMessageType.Image;
-                    break;
-                case 2:
-                    msg_type = EMessageType.Video;
-                    break;
-            }
-            DateTime msg_date = new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(time);
-            CMessage msg = new CMessage(m_user_id, uid, ref data, msg_type, EStatus.Incoming, m_get_message_document_end(), msg_date);
-            string filename;
-            if (m_incoming_file(uid, msg_type == EMessageType.Image ? true : false, out filename))
-                File.WriteAllBytes(filename, data);
-            m_incoming_message(message_id);
+            EnqueueEvent(new CQueueMessage(m_user_id, 5, uid, data, message_id, type, m_get_message_document_end(),
+                new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(time)));
         }
         public bool WasLoginProbe() {
             return m_login_probe;
         }
         public void ResetLoginProbe() {
             m_login_probe = false;
-        }
-        public CMessage SendMessage(ref byte[] message, EMessageType message_type, TextPointer msg_pointer) {
-            int type = 1;
-            switch (message_type) {
-                case EMessageType.Text:
-                    type = 1;
-                    break;
-                case EMessageType.Image:
-                    type = 2;
-                    break;
-                case EMessageType.Video:
-                    type = 3;
-                    break;
-            }
-            m_backend.SendMessage(m_user_id, ref message, m_encryption, type);
-            string key = m_backend.GetLastMessageId();
-            DateTime msg_date = m_backend.GetLastMessageDate();
-            CMessage msg = new CMessage(m_user_id, m_user_id, ref message, message_type, EStatus.Sending, msg_pointer, msg_date);
-            m_messages.Add(key, msg);
-            m_no_message.Set();
-            return msg;
         }
         public void AddUnreadMessage(string id) {
             m_new_messages.Add(id);

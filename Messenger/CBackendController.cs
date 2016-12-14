@@ -26,7 +26,7 @@ namespace Messenger {
         static private extern void call_disconnect(IntPtr pObject);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
-            [In][Out] byte[] data, int data_size, [MarshalAs(UnmanagedType.Bool)] Boolean encrypted, int type);
+            [In][Out] byte[] data, int data_size, int type);
         [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
         static private extern void call_send_message_seen(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string message_id);
@@ -90,8 +90,8 @@ namespace Messenger {
         public void Disconnect() {
             call_disconnect(m_native_object);
         }
-        public void SendMessage(string user_id, ref byte[] data, Boolean encrypted, int type) {
-            call_send_message(m_native_object, user_id, data, data.Length, encrypted, type);
+        public void SendMessage(string user_id, byte[] data, int type) {
+            call_send_message(m_native_object, user_id, data, data.Length, type);
         }
         public void SendMessageSeen(string user_id, string message_id) {
             call_send_message_seen(m_native_object, user_id, message_id);
