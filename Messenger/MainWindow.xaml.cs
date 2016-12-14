@@ -40,6 +40,13 @@ namespace Messenger {
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
             m_destination = null;
+
+            if (File.Exists("history")) {
+                TextRange content = new TextRange(output_textbox.Document.ContentEnd, output_textbox.Document.ContentEnd);
+                using (FileStream fs = File.Open("history", FileMode.Open)) {
+                    content.Load(fs, DataFormats.Xaml);
+                }
+            }
         }
         public TextPointer GetMessageDocumentEnd() {
             return this.output_textbox.Document.ContentEnd;
@@ -159,11 +166,12 @@ namespace Messenger {
             if (e.Key == Key.Enter && !Keyboard.IsKeyDown(Key.LeftCtrl)) {
                 this.login_button.RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
             }
-            else if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftCtrl)) {
-                message_input_textbox.Text += "\r";
-            }
         }
         private void MessengerWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+            TextRange content = new TextRange(output_textbox.Document.ContentStart, output_textbox.Document.ContentEnd);
+            using (FileStream fs = File.Create("history")) {
+                content.Save(fs, DataFormats.Xaml);
+            }
             m_model.CloseConnection();
         }
         private void message_input_textbox_GotFocus(object sender, RoutedEventArgs e) {

@@ -36,7 +36,7 @@ namespace Messenger {
             string date_str = "<" + time.ToString() + ">";
             if (msg_type == CModel.EMessageType.Text) {
                 msg_str = System.Text.Encoding.UTF8.GetString(msg_content);;
-                m_content = date_str + m_sender + ": " + msg_str + "\r";
+                m_content = date_str + m_sender + ": " + msg_str + "\r" ;
                 
             }
             else if (msg_type == CModel.EMessageType.Image) {
