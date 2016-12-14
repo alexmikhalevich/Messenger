@@ -43,9 +43,12 @@ namespace Messenger {
             m_destination = null;
 
             if (File.Exists("history")) {
-                TextRange content = new TextRange(output_textbox.Document.ContentEnd, output_textbox.Document.ContentEnd);
-                using (FileStream fs = File.Open("history", FileMode.Open)) {
-                    content.Load(fs, DataFormats.Xaml);
+                var res = MessageBox.Show("Do you want to load your history?", "History", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (res == MessageBoxResult.Yes) {
+                    TextRange content = new TextRange(output_textbox.Document.ContentEnd, output_textbox.Document.ContentEnd);
+                    using (FileStream fs = File.Open("history", FileMode.Open)) {
+                        content.Load(fs, DataFormats.Xaml);
+                    }
                 }
             }
         }
@@ -181,8 +184,15 @@ namespace Messenger {
         }
         private void MessengerWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             TextRange content = new TextRange(output_textbox.Document.ContentStart, output_textbox.Document.ContentEnd);
-            using (FileStream fs = File.Create("history")) {
-                content.Save(fs, DataFormats.Xaml);
+            string s_content = content.Text;
+            if (!String.IsNullOrWhiteSpace(s_content)) {
+                var res = MessageBox.Show("Do you want to save your history?", "History", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (res == MessageBoxResult.Yes) {
+                    content = new TextRange(output_textbox.Document.ContentStart, output_textbox.Document.ContentEnd);
+                    using (FileStream fs = File.Create("history")) {
+                        content.Save(fs, DataFormats.Xaml);
+                    }
+                }
             }
             m_model.CloseConnection();
         }
