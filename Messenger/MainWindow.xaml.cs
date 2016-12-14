@@ -27,6 +27,7 @@ namespace Messenger {
         private const long MAX_FILE_SIZE = 209715200; //200 MB
         private const int REQUEST_USERS_PERIOD = 5;
         private DispatcherTimer m_request_users_timer;
+        private string m_destination;
         public MainWindow() {
             InitializeComponent();
             m_model = new CModel(new CModel.UpdateUserListDelegate(UpdateUserList), 
@@ -37,17 +38,18 @@ namespace Messenger {
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
             m_request_users_timer.Interval = new TimeSpan(0, 0, REQUEST_USERS_PERIOD);
+            m_destination = null;
         }
         public TextPointer GetMessageDocumentEnd() {
             return this.output_textbox.Document.ContentEnd;
         }
         public void IncomingMessage(string msg_id) {
-            if (this.message_input_textbox.IsFocused) {
-                m_model.SendMessageSeen(msg_id);
-            }
+            bool is_focused = false;
+            this.message_input_textbox.Dispatcher.Invoke(() => { is_focused = this.message_input_textbox.IsFocused; });
+            if (is_focused) m_model.SendMessageSeen(msg_id);
             else {
                 m_model.AddUnreadMessage(msg_id);
-                MessengerWindow.Title += " <New messages>";
+                MessengerWindow.Dispatcher.Invoke(() => { MessengerWindow.Title += " <New messages>"; });
             }
         }
         public bool IncomingFile(string sender, bool is_image, out string filename) {
@@ -87,7 +89,7 @@ namespace Messenger {
         }
         private void _SendMessage(string message) {
             byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
-            m_model.EnqueueEvent(new CQueueMessage(m_model.m_user_id, 1, m_model.m_user_id, msg_arr, null,
+            m_model.EnqueueEvent(new CQueueMessage(m_destination, 1, m_model.m_user_id, msg_arr, null,
                 1, output_textbox.Document.ContentEnd));
         }
         private void Send_Click(object sender, RoutedEventArgs e) {
@@ -112,7 +114,8 @@ namespace Messenger {
             }
             else {
                 string message_text = this.message_input_textbox.Text;
-                _SendMessage(message_text);
+                if(m_destination != null) _SendMessage(message_text);
+                else MessageBox.Show("You should choose destination user", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
             }
             this.message_input_textbox.Clear();
         }
@@ -151,8 +154,14 @@ namespace Messenger {
             m_model.CloseConnection();
         }
         private void message_input_textbox_GotFocus(object sender, RoutedEventArgs e) {
-            MessengerWindow.Title = "Messenger";
+            MessengerWindow.Title = (m_destination == null) ? "Messenger" : "Destination: " + m_destination;
             m_model.AllMessagesSeen();
+        }
+        private void user_listbox_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+            if (user_listbox.SelectedItem != null) {
+                m_destination = user_listbox.SelectedItem.ToString();
+                MessengerWindow.Title = "Destination: " + m_destination;
+            }
         }
     }
 }

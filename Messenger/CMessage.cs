@@ -19,10 +19,10 @@ namespace Messenger {
         Incoming
     }
     class CMessage {
-        private string m_sender;
         private string m_user;
         private string m_content;
         private DateTime m_time;
+        public string m_sender {get; set; }
         public TextRange m_message_range { get; set; }
         public TextRange m_nick_range { get; set; }
         public TextRange m_date_range { get; set; }
@@ -47,10 +47,11 @@ namespace Messenger {
                 msg_str = " sent a video\r";
                 m_content = date_str + m_sender + msg_str;
             }
-            context.Send(o => { content_range.Text = m_content; }, null);
-            m_date_range = new TextRange(content_range.Start, content_range.Start.GetPositionAtOffset(date_str.Length));
-            m_nick_range = new TextRange(m_date_range.End, m_date_range.End.GetPositionAtOffset(m_sender.Length + 1));
-            m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length + 1));
+            context.Send(o => { content_range.Text = m_content; 
+                m_date_range = new TextRange(content_range.Start, content_range.Start.GetPositionAtOffset(date_str.Length));
+                m_nick_range = new TextRange(m_date_range.End, m_date_range.End.GetPositionAtOffset(m_sender.Length + 1));
+                m_message_range = new TextRange(m_nick_range.End, m_nick_range.End.GetPositionAtOffset(msg_str.Length + 1));
+            }, null);
             status = msg_status;
             UpdateRepresentation(EStatus.Sending, context);
             m_time = time;

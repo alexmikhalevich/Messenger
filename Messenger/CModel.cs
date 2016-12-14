@@ -126,7 +126,7 @@ namespace Messenger {
             else _ProcessSend(queue_msg);
         }
         private void _ProcessSend(CQueueMessage queue_msg) {
-            m_backend.SendMessage(m_user_id, queue_msg.m_data, queue_msg.m_type);
+            m_backend.SendMessage(queue_msg.m_user_id, queue_msg.m_data, queue_msg.m_type);
             string key = m_backend.GetLastMessageId();
             DateTime msg_date = m_backend.GetLastMessageDate();
             EMessageType msg_type = EMessageType.Text;
@@ -161,6 +161,7 @@ namespace Messenger {
             }
             CMessage msg = new CMessage(queue_msg.m_user_id, queue_msg.m_sender_id, queue_msg.m_data, msg_type,
                 EStatus.Incoming, queue_msg.m_text_ptr, queue_msg.m_date, m_context);
+            m_messages.Add(queue_msg.m_message_id, msg);
             //string filename;
             //if (m_incoming_file(uid, msg_type == EMessageType.Image ? true : false, out filename))
             //    File.WriteAllBytes(filename, data);
@@ -243,7 +244,7 @@ namespace Messenger {
             string message_id = Encoding.ASCII.GetString(msg_id_in_bytes);
 
             byte[] data = new byte[data_size];
-            Marshal.Copy(data_ptr, data, 0, data_size);
+            if(data_ptr != IntPtr.Zero) Marshal.Copy(data_ptr, data, 0, data_size);
             m_backend.FreePtr(data_ptr);
             EnqueueEvent(new CQueueMessage(m_user_id, 5, uid, data, message_id, type, m_get_message_document_end(),
                 new DateTime(1970, 1, 1).ToLocalTime().AddSeconds(time)));
@@ -253,6 +254,7 @@ namespace Messenger {
         }
         public void ResetLoginProbe() {
             m_login_probe = false;
+            m_is_logged_in = false;
         }
         public void AddUnreadMessage(string id) {
             m_new_messages.Add(id);
@@ -261,7 +263,9 @@ namespace Messenger {
             if(m_is_logged_in) m_backend.Disconnect();
         }
         public void SendMessageSeen(string id) {
-            m_backend.SendMessageSeen(m_user_id, id);
+            m_backend.SendMessageSeen(m_messages[id].m_sender, id); //TODO: replace m_user_id
+            m_messages[id].UpdateRepresentation(EStatus.Seen, m_context);
+            m_messages.Remove(id);
         }
         public void AllMessagesSeen() {
             foreach (string id in m_new_messages) 

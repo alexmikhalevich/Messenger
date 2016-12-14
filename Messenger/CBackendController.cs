@@ -9,43 +9,45 @@ namespace Messenger {
     class CBackendController : IDisposable {
         public delegate void RequestUsersCallBack(int status);
         public delegate void LoginRequestCallback(int status);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate void MessageStatusChangeCallback(IntPtr msg_id, int str_len, int status);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         public delegate void MessageReceivedCallback(IntPtr user_id, int user_id_len, IntPtr msg_id, 
             int msg_id_len, int time, int type, IntPtr data, int data_size);
         #region PInvokes
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern IntPtr create_backend_instance([MarshalAs(UnmanagedType.LPStr)] string server_url, ushort port);
-        [DllImport("MessengerBackend.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CallingConvention = CallingConvention.StdCall)]
         static private extern void dispose_class(IntPtr pObject);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void call_login(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string password, 
             [MarshalAs(UnmanagedType.Bool)] Boolean use_encryption,
             [MarshalAs(UnmanagedType.FunctionPtr)] LoginRequestCallback pfResult);
-        [DllImport("MessengerBackend.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CallingConvention = CallingConvention.StdCall)]
         static private extern void call_disconnect(IntPtr pObject);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void call_send_message(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [In][Out] byte[] data, int data_size, int type);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void call_send_message_seen(IntPtr pObject, [MarshalAs(UnmanagedType.LPStr)] string user_id,
             [MarshalAs(UnmanagedType.LPStr)] string message_id);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void call_request_active_users(IntPtr pObject, [MarshalAs(UnmanagedType.FunctionPtr)] RequestUsersCallBack pfResult);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern IntPtr get_last_msg_id(IntPtr pObject, out int str_len);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern int get_last_msg_time(IntPtr pObject);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern IntPtr get_next_user(IntPtr pObject, out int str_len);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void free_user_list([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] IntPtr[] data, int size);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void set_msg_status_changed_callback(IntPtr pObject, 
             [MarshalAs(UnmanagedType.FunctionPtr)] MessageStatusChangeCallback pfResult);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void set_msg_received_callback(IntPtr pObject, [MarshalAs(UnmanagedType.FunctionPtr)] MessageReceivedCallback pfResult);
-        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("MessengerBackend.dll", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
         static private extern void free_data(IntPtr data_ptr);
         #endregion PInvokes
         #region Members
