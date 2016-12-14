@@ -95,11 +95,20 @@ namespace Messenger {
         private void _LoginWindow(out string user_id, out string password, out string server_address, out ushort port, out bool use_encryption) {
             LoginWindow window = new LoginWindow();
             window.ShowDialog();
-            user_id = window.user_id;
-            password = window.password;
-            server_address = window.server_address;
-            port = window.port;
-            use_encryption = window.encryption_enabled;
+            if (!window.correct_input) {
+                user_id = null;
+                password = null;
+                server_address = null;
+                port = 0;
+                use_encryption = window.encryption_enabled;
+            }
+            else {
+                user_id = window.user_id;
+                password = window.password;
+                server_address = window.server_address;
+                port = window.port;
+                use_encryption = window.encryption_enabled;
+            }
         }
         private void _SendMessage(string message) {
             byte[] msg_arr = System.Text.Encoding.UTF8.GetBytes(message);
@@ -112,6 +121,7 @@ namespace Messenger {
                 ushort port;
                 bool use_encryption;
                 _LoginWindow(out user_id, out password, out server_address, out port, out use_encryption);
+                if (user_id == null) return;
                 m_model.Login(user_id, password, server_address, port, use_encryption);
                 while (m_model.WasLoginProbe() == false) continue;
                 if (m_model.m_is_logged_in) {
