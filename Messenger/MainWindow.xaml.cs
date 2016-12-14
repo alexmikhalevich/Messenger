@@ -35,6 +35,7 @@ namespace Messenger {
                 new CModel.GetMessageDocumentEnd(GetMessageDocumentEnd),
                 new CModel.IncomingMessage(IncomingMessage),
                 new CModel.SaveIncomingFile(IncomingFile),
+                new CModel.LoginRequestResultProcessor(LoginResponseProcessor),
                 SynchronizationContext.Current);
             m_request_users_timer = new DispatcherTimer();
             m_request_users_timer.Tick += new EventHandler(Request_Users);
@@ -123,19 +124,6 @@ namespace Messenger {
                 _LoginWindow(out user_id, out password, out server_address, out port, out use_encryption);
                 if (user_id == null) return;
                 m_model.Login(user_id, password, server_address, port, use_encryption);
-                while (m_model.WasLoginProbe() == false) continue;
-                if (m_model.m_is_logged_in) {
-                    MessengerWindow.login_button.Content = "Send";
-                    MessengerWindow.send_file_button.IsEnabled = true;
-                    MessengerWindow.message_input_textbox.IsEnabled = true;
-                    m_model.RequestActiveUsers();
-                    m_request_users_timer.Start();
-                    Task.Run(() => { m_model.ProcessEvents(); });
-                }
-                else {
-                    m_model.ResetLoginProbe();
-                    MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
             }
             else {
                 string message_text = this.message_input_textbox.Text;
@@ -143,6 +131,20 @@ namespace Messenger {
                 else MessageBox.Show("You should choose destination user", "Warning", MessageBoxButton.OK, MessageBoxImage.Exclamation);
             }
             this.message_input_textbox.Clear();
+        }
+        public void LoginResponseProcessor() {
+            if (m_model.m_is_logged_in) {
+                MessengerWindow.Dispatcher.Invoke(() => { login_button.Content = "Send"; });
+                MessengerWindow.Dispatcher.Invoke(() => { send_file_button.IsEnabled = true; });
+                MessengerWindow.Dispatcher.Invoke(() => { message_input_textbox.IsEnabled = true; });
+                m_model.RequestActiveUsers();
+                m_request_users_timer.Start();
+                Task.Run(() => { m_model.ProcessEvents(); });
+            }
+            else {
+                m_model.ResetLoginProbe();
+                MessageBox.Show(m_model.GetLoginError(), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
         private void Attach_Click(object sender, RoutedEventArgs e) {
             OpenFileDialog fileDialog = new OpenFileDialog();

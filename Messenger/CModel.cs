@@ -76,9 +76,11 @@ namespace Messenger {
         private GetMessageDocumentEnd m_get_message_document_end;
         private IncomingMessage m_incoming_message;
         private SaveIncomingFile m_incoming_file;
+        private LoginRequestResultProcessor m_login_req_res;
         private SynchronizationContext m_context;
         public CModel(UpdateUserListDelegate upd_delegate, GetMessageDocumentEnd get_msg_doc_delegate,
-            IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate, SynchronizationContext cntx) {
+            IncomingMessage incoming_message_delegate, SaveIncomingFile incoming_file_delegate, 
+            LoginRequestResultProcessor log_req_res, SynchronizationContext cntx) {
             m_is_logged_in = false;
             m_messages = new Dictionary<string, CMessage>();
             m_new_messages = new List<string>();
@@ -87,6 +89,7 @@ namespace Messenger {
             m_get_message_document_end = get_msg_doc_delegate;
             m_incoming_message = incoming_message_delegate;
             m_incoming_file = incoming_file_delegate;
+            m_login_req_res = log_req_res;
             m_event_queue = new ConcurrentQueue<CQueueMessage>();
             m_context = cntx;
         }
@@ -94,6 +97,7 @@ namespace Messenger {
         public delegate TextPointer GetMessageDocumentEnd();
         public delegate void IncomingMessage(string msg_id);
         public delegate bool SaveIncomingFile(string sender, bool is_image, out string filename, string file_type);
+        public delegate void LoginRequestResultProcessor();
         public bool m_is_logged_in { get; set; }
         public string m_user_id { get; set; }
         public void EnqueueEvent(CQueueMessage queue_msg) {
@@ -267,6 +271,7 @@ namespace Messenger {
             m_login_probe = true;
             if (m_login_request_status == ERequestStatus.Ok)
                 m_is_logged_in = true;
+            m_login_req_res();
         }
         public void ProcessUserRequestStatus(int status) {
             _SetStatus(status, ref m_user_request_status);
